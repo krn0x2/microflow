@@ -1,13 +1,10 @@
 const { State, Machine, interpret } = require("xstate");
 const _ = require("lodash");
-const { delay } = require("bluebird");
-const { v4: uuidv4 } = require("uuid");
-const sampleDef = require("./input.json");
-const { JSONPath } = require("jsonpath-plus");
+const Promise = require("bluebird");
+const { delay } = Promise;
 const { transform } = require("./utils");
-const getMachine = (def) => Machine(def, { services: { http, fake } });
 
-const memory = {};
+const getMachine = (def) => Machine(def, { services: { http, fake } });
 
 const http = async (context, event, { src }) => {
   const { parameters, resultSelector, taskId } = src;
@@ -39,39 +36,65 @@ const taskDefs = {
   },
 };
 
-class Stepflow {
-  constructor(config) {}
+class Microflow {
+  constructor(config = {}) {
+    const { storage } = config;
+    if (!storage) {
+      const DefaultStorage = require("./storage");
+      this.storage = new DefaultStorage();
+    } else {
+      this.storage = storage;
+    }
+  }
 
   registerTask(taskConfig) {}
 
-  registerWorkflow() {}
-
-  startWorkflow() {
-    const fetchMachine = getMachine(sampleDef);
-    const { initialState } = fetchMachine;
-    const id = uuidv4();
-    memory[id] = JSON.stringify(initialState);
-    return id;
+  async putWorkflow(data) {
+    return this.storage.putWorkflow(data);
   }
 
-  async sendEvent(id, event) {
-    const current_wf_json = JSON.parse(memory[id]);
-    const fetchMachine = getMachine(sampleDef);
+  async getWorkflow(workflow_id) {
+    return this.storage.getWorkflow(workflow_id);
+  }
+
+  async startWorkflow(workflow_id) {
+    const { definition } = await this.storage.getWorkflow(workflow_id);
+    const fetchMachine = getMachine(definition);
+    const { initialState } = fetchMachine;
+    const { id: instance_id } = await this.storage.putWorkflowInstance({
+      current_json: initialState,
+      definition,
+    });
+    return { id: instance_id };
+  }
+
+  async sendEvent(instance_id, event) {
+    const { definition, current_json } = await this.storage.getWorkflowInstance(
+      instance_id
+    );
+    const fetchMachine = getMachine(definition);
     // console.log(fetchMachine)
-    // Use State.create() to restore state from a plain object
-    const previousState = State.create(current_wf_json);
+    const previousState = State.create(current_json);
     // console.log(previousState)
-    // Use machine.resolveState() to resolve the state definition to a new State instance relative to the machine
     const resolvedState = fetchMachine.resolveState(previousState);
     // console.log(resolvedState)
-    //   const nextState = fetchMachine.transition(resolvedState, machineEvent);
+    if (resolvedState.done)
+      return { message: `The workflow instance id : ${instance_id} has already ended` };
+
+    const { nextEvents } = resolvedState;
+    const { type } = event;
+    if (!_.includes(nextEvents, type))
+      return { message: `The event of type : ${type} is not allowed` };
     const service = interpret(fetchMachine).start(resolvedState);
     return new Promise((res) => {
       service
         .onTransition(async (state, event) => {
-          //   console.log(state, event);
+          console.log(state, event);
           if (state.changed && _.isEmpty(state.children)) {
-            memory[id] = JSON.stringify(state);
+            await this.storage.putWorkflowInstance({
+              id: instance_id,
+              current_json: state,
+            });
             res({
               currentState: state.value,
               completed: state.done,
@@ -80,12 +103,21 @@ class Stepflow {
           }
         })
         .send(event);
-    });
+    })
+      .timeout(50000)
+      .catch((err) => {
+        return {
+          message:
+            "The workflow failed to respond within express timeout limit of 50 seconds",
+        };
+      });
   }
 
-  describeWorkflow() {}
+  async getWorkflowInstance(id) {
+    return this.storage.getWorkflowInstance(id);
+  }
 
   describeWorkflowExecution() {}
 }
 
-module.exports = Stepflow;
+module.exports = Microflow;

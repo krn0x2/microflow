@@ -1,24 +1,30 @@
 {
-  "name": "stepflow",
-  "version": "1.0.0",
+  "name": "microflow",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "axios": "^0.21.0",
-    "handlebars": "^4.7.6",
-    "jsonpath-plus": "^4.0.0",
-    "lodash": "^4.17.20",
-    "xstate": "^4.14.0"
-  },
-  "devDependencies": {
     "bluebird": "^3.7.2",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
-    "uuid": "^8.3.1"
-  }
+    "handlebars": "^4.7.6",
+    "jsonpath-plus": "^4.0.0",
+    "lodash": "^4.17.20",
+    "uuid": "^8.3.1",
+    "xstate": "^4.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krn0x2/microflow.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/krn0x2/microflow/issues"
+  },
+  "homepage": "https://github.com/krn0x2/microflow#readme"
 }
