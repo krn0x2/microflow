@@ -1,14 +1,32 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const Microflow = require("./index");
+const MyStorage = require("./storage/custom/index");
 
 const app = express();
 const port = 4000;
 const PATH = "stepflow";
 
-const microflowService = new Microflow();
+const microflowService = new Microflow({
+  storage: new MyStorage()
+});
 
 app.use(bodyParser.json());
+
+// Register task
+app.post(`/${PATH}/task`, async (req, res) => {
+  const { body } = req;
+  const response = await microflowService.putTask(body);
+  return res.status(200).json(response);
+});
+
+// Query task
+app.get(`/${PATH}/task/:id`, async (req, res) => {
+  const { params } = req;
+  const { id } = params;
+  const response = await microflowService.getTask(id);
+  return res.status(200).json(response);
+});
 
 // Register workflow
 app.post(`/${PATH}/workflow`, async (req, res) => {
