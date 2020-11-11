@@ -3,7 +3,19 @@
   "states": {
     "done": { "type": "final" },
     "failed": { "type": "final" },
-    "testing": { "on": { "test_complete": { "target": "ready_for_dev" } } },
+    "testing": {
+      "on": {
+        "test_complete": {
+          "target": "ready_for_dev",
+          "actions": {
+            "type": "io",
+            "config": {
+              "resultPath": "$.testOutput"
+            }
+          }
+        }
+      }
+    },
     "waiting": { "on": { "upload_file": { "target": "uploading" } } },
     "uploading": {
       "invoke": {
@@ -62,15 +74,18 @@
     "start_test_dag": {
       "invoke": {
         "src": {
-          "type": "http",
+          "type": "task",
+          "taskId": "airflow",
           "inputPath": {},
-          "parameters": {
-            "dagId": "dag1",
-            "data": "$.data"
-          },
-          "resultSelector": {},
-          "resultPath": {},
-          "taskId": "airflow"
+          "outputPath": {},
+          "config": {
+            "parameters": {
+              "dagId": "dag1",
+              "data": "$.data"
+            },
+            "resultSelector": {},
+            "resultPath": {}
+          }
         },
         "onDone": { "target": "testing" },
         "onError": { "target": "failed" }
