@@ -3,20 +3,8 @@ const _ = require("lodash");
 const axios = require("axios");
 const Promise = require("bluebird");
 const { delay } = Promise;
-const { transform } = require("./utils");
-
-const taskDefs = {
-  airflow: {
-    url: `http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs`,
-    headers: {
-      "Cache-Control": "no-cache",
-      "Content-Type": "application/json",
-    },
-    data: "$.data",
-    method: "post",
-  },
-};
-
+const { transform, setOnPath } = require("./utils");
+const MyInterpreter = require("./custom/interpreter");
 class Microflow {
   constructor(config = {}) {
     const { storage } = config;
@@ -31,34 +19,25 @@ class Microflow {
   _getMachine(config) {
     return Machine(config, {
       services: {
-        task: async (context, event, { src }) => {
+        task: async (context, { data }, { src }) => {
           try {
             const { taskId, config } = src;
             const { parameters, resultSelector, resultPath } = config;
-            const resolvedParameters = transform(parameters, event);
-            console.log(resolvedParameters);
+            const resolvedParameters = transform(parameters, data);
             const task = await this.storage.getTask(taskId);
-            console.log(task);
             const taskResolved = transform(task.config, resolvedParameters);
-            console.log(taskResolved);
             const response = await axios(taskResolved).then((res) => res.data);
-            console.log(response);
-            return response;
+            const resultSelected = transform(resultSelector, response);
+            const result = setOnPath(data, resultPath, resultSelected);
+            return result;
           } catch (err) {
             console.log(err);
             throw err;
           }
         },
         fake: async () => {
-          console.log("running");
-          await delay(3000);
+          await delay(2000);
           return { fileUrl: "https://aws.com" };
-        },
-      },
-      actions: {
-        io: (context, event, actionMeta) => {
-          console.log(event, actionMeta);
-          // const response = await axios(taskDefResolved).then(res => res.data);
         },
       },
     });
@@ -96,21 +75,17 @@ class Microflow {
       instance_id
     );
     const fetchMachine = this._getMachine(definition);
-    // console.log(fetchMachine)
     const previousState = State.create(current_json);
-    // console.log(previousState)
     const resolvedState = fetchMachine.resolveState(previousState);
-    // console.log(resolvedState)
     if (resolvedState.done)
       return {
         message: `The workflow instance id : ${instance_id} has already ended`,
       };
-
     const { nextEvents } = resolvedState;
     const { type } = event;
     if (!_.includes(nextEvents, type))
       return { message: `The event of type : ${type} is not allowed` };
-    const service = interpret(fetchMachine).start(resolvedState);
+    const service = new MyInterpreter(fetchMachine).start(resolvedState);
     return new Promise((res) => {
       service
         .onTransition(async (state, event) => {
@@ -128,10 +103,11 @@ class Microflow {
             });
           }
         })
-        .send(event);
+        .mySend(event);
     })
       .timeout(50000)
       .catch((err) => {
+        console.log(err);
         return {
           message:
             "The workflow failed to respond within express timeout limit of 50 seconds",
