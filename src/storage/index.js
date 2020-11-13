@@ -1,5 +1,4 @@
 const { v4: uuidV4 } = require("uuid");
-const _ = require("lodash");
 
 class DefaultStorage {
   constructor() {

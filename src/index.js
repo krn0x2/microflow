@@ -1,10 +1,11 @@
-const { State, Machine, interpret } = require("xstate");
+const { State, Machine } = require("xstate");
 const _ = require("lodash");
 const axios = require("axios");
 const Promise = require("bluebird");
 const { delay } = Promise;
 const { transform, setOnPath } = require("./utils");
-const MyInterpreter = require("./custom/interpreter");
+const Interpreter = require("./interpreter");
+
 class Microflow {
   constructor(config = {}) {
     const { storage } = config;
@@ -19,7 +20,7 @@ class Microflow {
   _getMachine(config) {
     return Machine(config, {
       services: {
-        task: async (context, { data }, { src }) => {
+        task: async (_context, { data }, { src }) => {
           try {
             const { taskId, config } = src;
             const { parameters, resultSelector, resultPath } = config;
@@ -59,40 +60,39 @@ class Microflow {
     return this.storage.getWorkflow(workflow_id);
   }
 
-  async startWorkflow(workflow_id) {
-    const { definition } = await this.storage.getWorkflow(workflow_id);
+  async startWorkflow(workflowId) {
+    const { definition } = await this.storage.getWorkflow(workflowId);
     const fetchMachine = this._getMachine(definition);
     const { initialState } = fetchMachine;
-    const { id: instance_id } = await this.storage.putWorkflowInstance({
+    const { id: instanceId } = await this.storage.putWorkflowInstance({
       current_json: initialState,
       definition,
     });
-    return { id: instance_id };
+    return { id: instanceId };
   }
 
-  async sendEvent(instance_id, event) {
-    const { definition, current_json } = await this.storage.getWorkflowInstance(
-      instance_id
+  async sendEvent(instanceId, event) {
+    const { definition, current_json:currentJson } = await this.storage.getWorkflowInstance(
+      instanceId
     );
     const fetchMachine = this._getMachine(definition);
-    const previousState = State.create(current_json);
+    const previousState = State.create(currentJson);
     const resolvedState = fetchMachine.resolveState(previousState);
     if (resolvedState.done)
       return {
-        message: `The workflow instance id : ${instance_id} has already ended`,
+        message: `The workflow instance id : ${instanceId} has already ended`,
       };
     const { nextEvents } = resolvedState;
     const { type } = event;
     if (!_.includes(nextEvents, type))
       return { message: `The event of type : ${type} is not allowed` };
-    const service = new MyInterpreter(fetchMachine).start(resolvedState);
+    const service = new Interpreter(fetchMachine).start(resolvedState);
     return new Promise((res) => {
       service
-        .onTransition(async (state, event) => {
-          // console.log(state, event);
+        .onTransition(async (state) => {
           if (state.changed && _.isEmpty(state.children)) {
             await this.storage.putWorkflowInstance({
-              id: instance_id,
+              id: instanceId,
               current_json: state,
               definition: {},
             });
@@ -103,7 +103,7 @@ class Microflow {
             });
           }
         })
-        .mySend(event);
+        .mSend(event);
     })
       .timeout(50000)
       .catch((err) => {

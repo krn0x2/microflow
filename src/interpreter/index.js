@@ -1,8 +1,9 @@
 const { Interpreter } = require("xstate");
 const _ = require("lodash");
 const { transform, setOnPath } = require("../utils");
+
 module.exports = class MyInterpreter extends Interpreter {
-  mySend(event, payload) {
+  mSend(event, payload) {
     const { type } = event;
     const data = _.get(event, "data", {});
     const lastEventData = _.get(this._state.event, "data", {});

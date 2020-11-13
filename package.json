@@ -1,13 +1,11 @@
 {
   "name": "microflow",
-  "version": "1.0.2",
-  "description": "",
-  "main": "index.js",
+  "version": "1.0.3",
+  "description": "Finite state machine based HTTP microservice orchestration",
+  "main": "src/index.js",
   "dependencies": {
     "axios": "^0.21.0",
     "bluebird": "^3.7.2",
-    "body-parser": "^1.19.0",
-    "express": "^4.17.1",
     "handlebars": "^4.7.6",
     "jsonpath-plus": "^4.0.0",
     "lodash": "^4.17.20",
@@ -15,20 +13,16 @@
     "xstate": "^4.14.0"
   },
   "devDependencies": {
-    "apollo-boost": "^0.4.9",
-    "cross-fetch": "^3.0.6",
-    "graphql": "^15.4.0",
-    "graphql-tag": "^2.11.0"
+    "eslint": "^7.13.0"
   },
   "scripts": {
-    "dev": "node test.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/krn0x2/microflow.git"
   },
-  "author": "",
+  "author": "Karan Chhabra",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/krn0x2/microflow/issues"
