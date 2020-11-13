@@ -1,15 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const Microflow = require("./index");
-const MyStorage = require("./storage/custom/index");
+const Microflow = require("../../src/index");
 
 const app = express();
-const port = 4000;
-const PATH = "stepflow";
+const port = 5000;
+const PATH = "microflow";
 
-const microflowService = new Microflow({
-  storage: new MyStorage()
-});
+const microflowService = new Microflow();
 
 app.use(bodyParser.json());
 
