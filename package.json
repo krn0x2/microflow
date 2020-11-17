@@ -2,7 +2,7 @@
   "name": "microflow",
   "version": "1.0.3",
   "description": "Finite state machine based HTTP microservice orchestration",
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "dependencies": {
     "axios": "^0.21.0",
     "bluebird": "^3.7.2",

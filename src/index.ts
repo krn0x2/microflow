@@ -25,8 +25,8 @@ interface MicroflowConfig {
 
 export class Microflow {
   public storage: MicroflowStorage;
-  constructor(config: MicroflowConfig) {
-    const { storage } = config;
+  constructor(config: MicroflowConfig | null) {
+    const { storage } = config || {};
     if (!storage) {
       this.storage = new DefaultStorage();
     } else {
@@ -164,3 +164,5 @@ export class Microflow {
     return this.storage.getWorkflowInstance(id);
   }
 }
+
+export default Microflow;
