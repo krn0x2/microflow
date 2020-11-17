@@ -13,9 +13,15 @@
     "xstate": "^4.14.0"
   },
   "devDependencies": {
-    "eslint": "^7.13.0"
+    "@types/bluebird": "^3.5.33",
+    "@types/lodash": "^4.14.165",
+    "@typescript-eslint/eslint-plugin": "^4.8.0",
+    "@typescript-eslint/parser": "^4.8.0",
+    "eslint": "^7.13.0",
+    "typescript": "^4.0.5"
   },
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

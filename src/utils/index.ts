@@ -1,6 +1,6 @@
-const { JSONPath } = require("jsonpath-plus");
-const _ = require("lodash");
-const handlebars = require("handlebars");
+import { JSONPath } from "jsonpath-plus";
+import * as _ from "lodash";
+import * as handlebars from "handlebars";
 
 const transform = (obj = null, root) =>
   _.isNull(obj)
@@ -30,4 +30,4 @@ const setOnPath = (root, path = "$", obj) => {
   return _.set(_.clone(root), lodashPath, obj);
 };
 
-module.exports = { transform, setOnPath };
+export { transform, setOnPath };

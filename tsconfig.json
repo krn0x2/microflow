@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "outDir": "./lib",
+    "declaration": true,
+    "module": "commonjs",
+    "allowJs": true,
+    "target": "ES2018"
+  },
+  "include": ["./src/**/*"]
+}
