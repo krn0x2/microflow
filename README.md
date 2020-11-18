@@ -69,7 +69,7 @@ const {
 ## Usage
 
 ```javascript
-import Microflow from "microflow";
+import { Microflow } from "microflow";
 
 const flow = new Microflow({
   // bring your own storage connector for persistence
