@@ -2,6 +2,17 @@
   "name": "microflow",
   "version": "1.0.3",
   "description": "Finite state machine based HTTP microservice orchestration",
+  "keywords": [
+    "workflow",
+    "state machine",
+    "orchestration",
+    "finite state machine",
+    "step function"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
   "main": "lib/index.js",
   "dependencies": {
     "axios": "^0.21.0",
@@ -28,10 +39,15 @@
     "type": "git",
     "url": "git+https://github.com/krn0x2/microflow.git"
   },
-  "author": "Karan Chhabra",
-  "license": "ISC",
+  "author": {
+    "name": "Karan Chhabra"
+  },
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/krn0x2/microflow/issues"
   },
-  "homepage": "https://github.com/krn0x2/microflow#readme"
+  "homepage": "https://github.com/krn0x2/microflow#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  }
 }

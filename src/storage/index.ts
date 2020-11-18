@@ -29,7 +29,7 @@ export class DefaultStorage implements MicroflowStorage {
     const { workflows } = this.memory;
     const genUUID = uuidV4();
     workflows.set(genUUID, { id: genUUID, ...data });
-    return workflows[genUUID];
+    return workflows.get(genUUID);
   }
 
   async getWorkflow(id: string):Promise<Workflow> {
@@ -59,7 +59,7 @@ export class DefaultStorage implements MicroflowStorage {
     const { tasks } = this.memory;
     const genUUID = uuidV4();
     tasks.set(genUUID, { id: genUUID, ...data });
-    return tasks[genUUID];
+    return tasks.get(genUUID);
   }
 
   async getTask(id: string) :Promise<Task>{
@@ -91,7 +91,7 @@ export class DefaultStorage implements MicroflowStorage {
     const { instances } = this.memory;
     const genUUID = uuidV4();
     instances.set(genUUID, { id: genUUID, ...data });
-    return instances[genUUID];
+    return instances.get(genUUID);
   }
 
   async getWorkflowInstance(id: string):Promise<WorkflowInstance> {

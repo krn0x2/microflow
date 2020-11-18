@@ -1,10 +1,10 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const Microflow = require("../../src/index");
+const express = require('express');
+const bodyParser = require('body-parser');
+const { Microflow } = require('../../lib/index');
 
 const app = express();
 const port = 5000;
-const PATH = "microflow";
+const PATH = 'microflow';
 
 const microflowService = new Microflow();
 
@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 // Register task
 app.post(`/${PATH}/task`, async (req, res) => {
   const { body } = req;
-  const response = await microflowService.putTask(body);
+  const response = await microflowService.createTask(body);
   return res.status(200).json(response);
 });
 
@@ -28,7 +28,7 @@ app.get(`/${PATH}/task/:id`, async (req, res) => {
 // Register workflow
 app.post(`/${PATH}/workflow`, async (req, res) => {
   const { body } = req;
-  const response = await microflowService.putWorkflow(body);
+  const response = await microflowService.createWorkflow(body);
   return res.status(200).json(response);
 });
 
@@ -65,7 +65,7 @@ app.get(`/${PATH}/workflow/instance/:id`, async (req, res) => {
 
 // Healthcheck
 app.get(`/${PATH}`, (req, res) => {
-  res.status(200).json({ message: `Started` });
+  res.status(200).json({ message: 'Started' });
 });
 
 app.listen(port, () => {
