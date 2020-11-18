@@ -36,23 +36,33 @@ npm i --save microflow
 The `Microflow` class provides various methods to author/execute/infer workflow and workflow instances
 
 ```javascript
-import Microflow from "microflow";
+import { Microflow } from "microflow";
 const flow = new Microflow();
 const {
-  // create/put task
-  putTask,
+  // create task
+  createTask,
+  // create/put workflow
+  createWorkflow,
   // get task
   getTask,
-  // create/put workflow
-  putWorkflow,
   // get workflow
   getWorkflow,
-  // create workflow instance
+
+  // start workflow instance
   startWorkflow,
   // send event to workflow instance
   sendEvent,
   // get workflow instance details (useful for UI)
   getWorkflowInstance,
+
+  // update task
+  updateTask
+  // update workflow
+  updateWorkflow
+  // delete task
+  deleteTask
+  // delete workflow
+  deleteWorkflow
 } = flow;
 ```
 
@@ -69,9 +79,7 @@ const flow = new Microflow({
 // Authoring task and workflow
 
 // Register a task
-const task = await flow.putTask({
-  // unique task id
-  id: "airflow",
+const task = await flow.createTask({
   // type of task (only 'http' supported right now)
   type: "http",
   //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
@@ -87,9 +95,7 @@ const task = await flow.putTask({
 });
 
 // Register a workflow
-const workflow = await flow.putWorkflow({
-  // unique id of the workflow
-  id: "myWorkflow",
+const workflow = await flow.createWorkflow({
   definition: {
     initial: "waiting",
     states: {
@@ -161,7 +167,7 @@ const workflow = await flow.putWorkflow({
 
 // Executing workflow aka "workflow instances"
 
-const { id } = await flow.startWorkflow("myWorkflow");
+const { id } = await flow.startWorkflow(workflow.id);
 
 // Sending events to workflow instance
 const response1 = await flow.sendEvent(id, {
@@ -214,9 +220,28 @@ response3 = {
 }
 */
 ```
+## Storage
+
+```javascript
+import { Microflow } from "microflow";
+import { MicroflowStorage } from "microflow/types";
+
+// define your own storage from MicroflowStorage abstract class
+class MyStorage implements MicroflowStorage {
+  // define CRUD functions
+}
+
+const store = new MyStorage();
+
+// create an instance of microflow with custom store injected
+const flow = new Microflow({
+  storage: store
+});
+```
+
 ## Examples
 
-Navigate to `examples/basic` or `examples/custom-storage` to run sample express projects
+Navigate to `examples/basic` to run a sample express project with ephemeral storage.
 
 ## Run tests
 
