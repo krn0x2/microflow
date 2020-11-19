@@ -110,7 +110,7 @@ const workflow = await flow.createWorkflow({
         invoke: {
           src: {
             type: "task",
-            taskId: "airflow",
+            taskId: task.id,
             config: {
               parameters: {
                 dagId: "dag1",
