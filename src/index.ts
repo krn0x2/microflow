@@ -1,8 +1,7 @@
 import { State, Machine, MachineConfig, StateMachine, Typestate } from 'xstate';
 import * as _ from 'lodash';
 import axios from 'axios';
-import * as Bluebird from 'bluebird';
-const { delay, Promise } = Bluebird;
+import { Promise } from 'bluebird';
 import { transform, setOnPath } from './utils';
 import { WorkflowInterpreter } from './interpreter';
 import { DefaultStorage } from './storage';
@@ -40,24 +39,15 @@ export class Microflow {
     return Machine(config, {
       services: {
         task: async (_context, { data }, { src }) => {
-          try {
-            const { taskId, config } = src;
-            const { parameters, resultSelector, resultPath } = config;
-            const resolvedParameters = transform(parameters, data);
-            const task = await this.storage.getTask(taskId);
-            const taskResolved = transform(task.config, resolvedParameters);
-            const response = await axios(taskResolved).then((res) => res.data);
-            const resultSelected = transform(resultSelector, response);
-            const result = setOnPath(data, resultPath, resultSelected);
-            return result;
-          } catch (err) {
-            console.log(err);
-            throw err;
-          }
-        },
-        fake: async () => {
-          await delay(2000);
-          return { fileUrl: 'https://aws.com' };
+          const { taskId, config } = src;
+          const { parameters, resultSelector, resultPath } = config;
+          const resolvedParameters = transform(parameters, data);
+          const task = await this.storage.getTask(taskId);
+          const taskResolved = transform(task.config, resolvedParameters);
+          const response = await axios(taskResolved).then((res) => res.data);
+          const resultSelected = transform(resultSelector, response);
+          const result = setOnPath(data, resultPath, resultSelected);
+          return result;
         }
       }
     });
@@ -151,8 +141,7 @@ export class Microflow {
         .mSend(event);
     })
       .timeout(50000)
-      .catch((err) => {
-        console.log(err);
+      .catch(() => {
         return {
           message:
             'The workflow failed to respond within express timeout limit of 50 seconds'
