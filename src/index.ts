@@ -39,14 +39,17 @@ export class Microflow {
     return Machine(config, {
       services: {
         task: async (_context, { data }, { src }) => {
+          console.log(data, src);
           const { taskId, config } = src;
           const { parameters, resultSelector, resultPath } = config;
           const resolvedParameters = transform(parameters, data);
           const task = await this.storage.getTask(taskId);
+          console.log(task);
           const taskResolved = transform(task.config, resolvedParameters);
           const response = await axios(taskResolved).then((res) => res.data);
           const resultSelected = transform(resultSelector, response);
           const result = setOnPath(data, resultPath, resultSelected);
+          console.log(result);
           return result;
         }
       }
@@ -72,6 +75,8 @@ export class Microflow {
 
   // Workflow CRUD methods
   async createWorkflow(data: WorkflowInput): Promise<Workflow> {
+    const { definition } = data;
+    console.log(definition);
     return this.storage.createWorkflow(data);
   }
 
@@ -129,7 +134,7 @@ export class Microflow {
             await this.storage.updateWorkflowInstance({
               id: instanceId,
               currentJson: state,
-              definition: {}
+              definition
             });
             res({
               currentState: state.value,

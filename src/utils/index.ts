@@ -1,13 +1,13 @@
-import { JSONPath } from "jsonpath-plus";
-import * as _ from "lodash";
-import * as handlebars from "handlebars";
+import { JSONPath } from 'jsonpath-plus';
+import * as _ from 'lodash';
+import * as handlebars from 'handlebars';
 
 const transform = (obj = null, root) =>
   _.isNull(obj)
     ? root
     : _.mapValues(obj, (val) => {
         if (_.isString(val)) {
-          if (_.startsWith(val, "$"))
+          if (_.startsWith(val, '$'))
             return _.head(
               JSONPath({
                 path: val,
@@ -24,9 +24,9 @@ const transform = (obj = null, root) =>
         return val;
       });
 
-const setOnPath = (root, path = "$", obj) => {
-  if (path === "$") return obj;
-  const lodashPath = _.trimStart(path, "$.");
+const setOnPath = (root, path = '$', obj) => {
+  if (path === '$') return obj;
+  const lodashPath = _.trimStart(path, '$.');
   return _.set(_.clone(root), lodashPath, obj);
 };
 

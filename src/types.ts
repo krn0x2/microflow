@@ -1,10 +1,12 @@
 import { EventObject, StateValue } from 'xstate';
 
 export interface WorkflowInput {
+  id: string;
   definition: any;
 }
 
 export interface TaskInput {
+  id: string;
   type: 'http' | 'other';
   config: any;
 }
