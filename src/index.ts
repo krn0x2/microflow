@@ -129,7 +129,7 @@ export class Microflow {
             await this.storage.updateWorkflowInstance({
               id: instanceId,
               currentJson: state,
-              definition: {}
+              definition
             });
             res({
               currentState: state.value,

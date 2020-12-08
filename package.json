@@ -1,6 +1,6 @@
 {
   "name": "microflow",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Finite state machine based HTTP microservice orchestration",
   "keywords": [
     "workflow",
