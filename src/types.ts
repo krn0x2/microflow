@@ -2,7 +2,7 @@ import { EventObject, StateValue } from 'xstate';
 
 export interface WorkflowInput {
   id: string;
-  definition: any;
+  config: MicroflowDefinition;
 }
 
 export interface TaskInput {
@@ -18,6 +18,7 @@ export interface WorkflowInstanceInput {
 
 export interface Workflow {
   id: string;
+  config: any;
   definition: any;
 }
 
@@ -36,6 +37,12 @@ export interface WorkflowInstance {
 export interface WorkflowEvent extends EventObject {
   data: any;
 }
+
+export interface TaskTokenClaims {
+  workflowInstanceId: string;
+  taskEventSuffix: string;
+}
+
 export type SendEventError = {
   message: string;
 };
@@ -52,16 +59,39 @@ export type StartWorkflowResponse = {
 
 export type SendEventResponse = SendEventSuccess | SendEventError;
 
+export type MicroflowStateTypes = 'task' | 'generic';
+
+export interface TransitionConfig {
+  target: string;
+  resultSelector?: Record<string, any>;
+  resultPath?: string;
+}
+
+export interface StateNodeConfig {
+  type: MicroflowStateTypes;
+  taskId?: string;
+  parameters?: Record<string, any>;
+  resultSelector?: Record<string, any>;
+  resultPath?: string;
+  onDone?: TransitionConfig;
+  onError?: TransitionConfig;
+  meta?: Record<string, any>;
+  on?: Record<string, TransitionConfig>;
+}
+
+export interface MicroflowDefinition {
+  initial: string;
+  states: Record<string, StateNodeConfig>;
+}
+
 export abstract class MicroflowStorage {
-  abstract async createWorkflow(
-    workflowInput: WorkflowInput
-  ): Promise<Workflow>;
+  abstract async createWorkflow(workflowInput: Workflow): Promise<Workflow>;
   abstract async createTask(taskInput: TaskInput): Promise<Task>;
   abstract async createWorkflowInstance(
     workflowInstanceInput: WorkflowInstanceInput
   ): Promise<WorkflowInstance>;
 
-  abstract async getWorkflow(id: string): Promise<Workflow>;
+  abstract async getWorkflow(id: string): Promise<Workflow | null>;
   abstract async getTask(id: string): Promise<Task>;
   abstract async getWorkflowInstance(id: string): Promise<WorkflowInstance>;
 

@@ -6,7 +6,7 @@ import {
   Workflow,
   WorkflowInput,
   WorkflowInstance,
-  WorkflowInstanceInput,
+  WorkflowInstanceInput
 } from '../types';
 
 interface LocalMemory {
@@ -21,25 +21,24 @@ export class DefaultStorage implements MicroflowStorage {
     this.memory = {
       workflows: new Map(),
       tasks: new Map(),
-      instances: new Map(),
+      instances: new Map()
     };
   }
 
-  async createWorkflow(data: WorkflowInput):Promise<Workflow> {
+  async createWorkflow(data: Workflow): Promise<Workflow> {
     const { workflows } = this.memory;
-    const genUUID = uuidV4();
-    workflows.set(genUUID, { id: genUUID, ...data });
-    return workflows.get(genUUID);
+    workflows.set(data.id, data);
+    return workflows.get(data.id);
   }
 
-  async getWorkflow(id: string):Promise<Workflow> {
+  async getWorkflow(id: string): Promise<Workflow> {
     const { workflows } = this.memory;
     if (!workflows.has(id))
       throw new Error(`Workflow with id = ${id} not found`);
     return workflows.get(id);
   }
 
-  async updateWorkflow(data: Workflow):Promise<Workflow> {
+  async updateWorkflow(data: Workflow): Promise<Workflow> {
     const { workflows } = this.memory;
     const { id } = data;
     if (!workflows.has(id))
@@ -48,73 +47,69 @@ export class DefaultStorage implements MicroflowStorage {
     return workflows.get(id);
   }
 
-  async deleteWorkflow(id: string):Promise<boolean> {
+  async deleteWorkflow(id: string): Promise<boolean> {
     const { workflows } = this.memory;
     if (!workflows.has(id))
       throw new Error(`Workflow with id = ${id} not found`);
     return workflows.delete(id);
   }
 
-  async createTask(data: TaskInput) :Promise<Task>{
+  async createTask(data: TaskInput): Promise<Task> {
     const { tasks } = this.memory;
-    const genUUID = uuidV4();
-    tasks.set(genUUID, { id: genUUID, ...data });
-    return tasks.get(genUUID);
+    tasks.set(data.id, data);
+    return tasks.get(data.id);
   }
 
-  async getTask(id: string) :Promise<Task>{
+  async getTask(id: string): Promise<Task> {
     const { tasks } = this.memory;
-    if (!tasks.has(id))
-      throw new Error(`Task with id = ${id} not found`);
+    if (!tasks.has(id)) throw new Error(`Task with id = ${id} not found`);
     return tasks.get(id);
   }
 
-  async updateTask(data: Task) :Promise<Task>{
+  async updateTask(data: Task): Promise<Task> {
     const { tasks } = this.memory;
     const { id } = data;
-    if (!tasks.has(id))
-      throw new Error(`Task with id = ${id} not found`);
-      tasks.set(id, data);
+    if (!tasks.has(id)) throw new Error(`Task with id = ${id} not found`);
+    tasks.set(id, data);
     return tasks.get(id);
   }
 
-  async deleteTask(id: string) :Promise<boolean>{
+  async deleteTask(id: string): Promise<boolean> {
     const { tasks } = this.memory;
-    if (!tasks.has(id))
-      throw new Error(`Task with id = ${id} not found`);
+    if (!tasks.has(id)) throw new Error(`Task with id = ${id} not found`);
     return tasks.delete(id);
   }
 
   //Workflow Instances
 
-  async createWorkflowInstance(data: WorkflowInstanceInput):Promise<WorkflowInstance> {
+  async createWorkflowInstance(
+    data: WorkflowInstanceInput
+  ): Promise<WorkflowInstance> {
     const { instances } = this.memory;
     const genUUID = uuidV4();
     instances.set(genUUID, { id: genUUID, ...data });
     return instances.get(genUUID);
   }
 
-  async getWorkflowInstance(id: string):Promise<WorkflowInstance> {
+  async getWorkflowInstance(id: string): Promise<WorkflowInstance> {
     const { instances } = this.memory;
-    if (!instances.has(id))
-      throw new Error(`Task with id = ${id} not found`);
+    if (!instances.has(id)) throw new Error(`Task with id = ${id} not found`);
     return instances.get(id);
   }
 
-  async updateWorkflowInstance(data: WorkflowInstance):Promise<WorkflowInstance> {
+  async updateWorkflowInstance(
+    data: WorkflowInstance
+  ): Promise<WorkflowInstance> {
     const { instances } = this.memory;
     const { id } = data;
-    if (!instances.has(id))
-      throw new Error(`Task with id = ${id} not found`);
-      instances.set(id, data);
+    if (!instances.has(id)) throw new Error(`Task with id = ${id} not found`);
+    instances.set(id, data);
     return instances.get(id);
   }
 
-  async deleteWorkflowInstance(id: string):Promise<boolean> {
+  async deleteWorkflowInstance(id: string): Promise<boolean> {
     const { instances } = this.memory;
-    if (!instances.has(id))
-      throw new Error(`Task with id = ${id} not found`);
+    if (!instances.has(id)) throw new Error(`Task with id = ${id} not found`);
     return instances.delete(id);
   }
-
 }

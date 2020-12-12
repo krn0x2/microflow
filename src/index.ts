@@ -1,10 +1,12 @@
 import { State, Machine, MachineConfig, StateMachine, Typestate } from 'xstate';
 import * as _ from 'lodash';
 import axios from 'axios';
-import { Promise } from 'bluebird';
+import * as jwt from 'jsonwebtoken';
+import { Promise as BluebirdPromise } from 'bluebird';
 import { transform, setOnPath } from './utils';
 import { WorkflowInterpreter } from './interpreter';
 import { DefaultStorage } from './storage';
+import { microflowToXstateCofig } from './utils/convert';
 import {
   MicroflowStorage,
   TaskInput,
@@ -15,17 +17,30 @@ import {
   WorkflowInstance,
   SendEventResponse,
   SendEventSuccess,
-  StartWorkflowResponse
+  StartWorkflowResponse,
+  TaskTokenClaims
 } from './types';
 
 interface MicroflowConfig {
   storage?: MicroflowStorage;
+  jwt: {
+    secretOrPublicKey: jwt.Secret;
+    sign?: jwt.SignOptions;
+    verify?: jwt.VerifyOptions;
+  };
 }
 
 export class Microflow {
   public storage: MicroflowStorage;
-  constructor(config: MicroflowConfig | null) {
-    const { storage } = config || {};
+  private secret: jwt.Secret;
+  private signOptions: jwt.SignOptions;
+  private verifyOptions: jwt.VerifyOptions;
+  constructor(config: MicroflowConfig) {
+    const { storage, jwt } = config;
+    const { secretOrPublicKey, sign, verify } = jwt;
+    this.secret = secretOrPublicKey;
+    this.signOptions = sign;
+    this.verifyOptions = verify;
     if (!storage) {
       this.storage = new DefaultStorage();
     } else {
@@ -38,19 +53,39 @@ export class Microflow {
   ): StateMachine<any, any, WorkflowEvent, Typestate<any>> {
     return Machine(config, {
       services: {
-        task: async (_context, { data }, { src }) => {
-          console.log(data, src);
-          const { taskId, config } = src;
-          const { parameters, resultSelector, resultPath } = config;
-          const resolvedParameters = transform(parameters, data);
-          const task = await this.storage.getTask(taskId);
-          console.log(task);
-          const taskResolved = transform(task.config, resolvedParameters);
-          const response = await axios(taskResolved).then((res) => res.data);
-          const resultSelected = transform(resultSelector, response);
-          const result = setOnPath(data, resultPath, resultSelected);
-          console.log(result);
-          return result;
+        task: async (ctx, { data }, { src }) => {
+          try {
+            console.log(ctx, data, src);
+            const { config, taskEventSuffix, task } = src;
+            const { parameters, resultSelector, resultPath } = config;
+            const resolvedParameters = transform(parameters, data);
+            console.log(resolvedParameters);
+            console.log(task);
+            const token = jwt.sign(
+              { workflowInstanceId: ctx.wfid, taskEventSuffix },
+              this.secret,
+              this.signOptions
+            );
+            console.log(token);
+            const taskResolved = transform(task.config, resolvedParameters);
+            console.log(taskResolved);
+            const tokenized = transform(
+              taskResolved,
+              {
+                task: { token }
+              },
+              '$$'
+            );
+            console.log(tokenized);
+            const response = await axios(tokenized).then((res) => res.data);
+            const resultSelected = transform(resultSelector, response);
+            const result = setOnPath(data, resultPath, resultSelected);
+            console.log(result);
+            return result;
+          } catch (ex) {
+            console.error(ex);
+            throw ex;
+          }
         }
       }
     });
@@ -75,9 +110,10 @@ export class Microflow {
 
   // Workflow CRUD methods
   async createWorkflow(data: WorkflowInput): Promise<Workflow> {
-    const { definition } = data;
+    const { config } = data;
+    const definition = await microflowToXstateCofig(config, this.storage);
     console.log(definition);
-    return this.storage.createWorkflow(data);
+    return this.storage.createWorkflow({ ...data, definition });
   }
 
   async getWorkflow(id: string): Promise<Workflow> {
@@ -94,13 +130,65 @@ export class Microflow {
 
   async startWorkflow(workflowId: string): Promise<StartWorkflowResponse> {
     const { definition } = await this.storage.getWorkflow(workflowId);
-    const fetchMachine = this._getMachine(definition);
-    const { initialState } = fetchMachine;
     const { id: instanceId } = await this.storage.createWorkflowInstance({
+      currentJson: {},
+      definition
+    });
+    const fetchMachine = this._getMachine({
+      ...definition,
+      context: { wfid: instanceId }
+    });
+    const { initialState } = fetchMachine;
+    await this.storage.updateWorkflowInstance({
+      id: instanceId,
       currentJson: initialState,
       definition
     });
     return { id: instanceId };
+  }
+
+  async sendTaskSuccess(
+    token: string,
+    data: Record<string, any>
+  ): Promise<SendEventResponse> {
+    try {
+      const claims = jwt.verify(
+        token,
+        this.secret,
+        this.verifyOptions
+      ) as TaskTokenClaims;
+      const { taskEventSuffix, workflowInstanceId } = claims;
+      return this.sendEvent(workflowInstanceId, {
+        type: `success-${taskEventSuffix}`,
+        data
+      });
+    } catch (ex) {
+      return {
+        message: 'Task token invalid'
+      };
+    }
+  }
+
+  async sendTaskFailure(
+    token: string,
+    data: Record<string, any>
+  ): Promise<SendEventResponse> {
+    try {
+      const claims = jwt.verify(
+        token,
+        this.secret,
+        this.verifyOptions
+      ) as TaskTokenClaims;
+      const { taskEventSuffix, workflowInstanceId } = claims;
+      return this.sendEvent(workflowInstanceId, {
+        type: `failure-${taskEventSuffix}`,
+        data
+      });
+    } catch (ex) {
+      return {
+        message: 'Task token invalid'
+      };
+    }
   }
 
   async sendEvent(
@@ -127,9 +215,11 @@ export class Microflow {
     const service = new WorkflowInterpreter(fetchMachine).start(
       resolvedState
     ) as WorkflowInterpreter;
-    return new Promise<SendEventSuccess>((res) => {
+    return new BluebirdPromise<SendEventSuccess>((res) => {
       service
         .onTransition(async (state) => {
+          if (state.done)
+            console.log(JSON.stringify(_.get(state, 'event.data', {})));
           if (state.changed && _.isEmpty(state.children)) {
             await this.storage.updateWorkflowInstance({
               id: instanceId,

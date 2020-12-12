@@ -24,7 +24,8 @@ export class WorkflowInterpreter extends Interpreter<
     const lastEventData = _.get(this.state.event, 'data', {});
     const { transitions } = this.machine.transition(this.state, event);
     const transition = _.head(transitions);
-    const { resultPath, resultSelector } = _.get(transition, 'meta.config', {});
+    const resultSelector = _.get(transition, 'resultSelector');
+    const resultPath = _.get(transition, 'resultPath');
     const resultSelected = transform(resultSelector, data);
     const result = setOnPath(lastEventData, resultPath, resultSelected);
     return this.send({ type, data: result }, payload);
