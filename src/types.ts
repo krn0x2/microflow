@@ -1,4 +1,44 @@
-import { EventObject, StateValue } from 'xstate';
+import jwt from 'jsonwebtoken';
+import { EventObject, MachineConfig, StateValue } from 'xstate';
+import { ICrudable } from './crudable';
+
+export class Error {
+  code: number;
+  message: string;
+  constructor(code: number, message: string) {
+    this.code = code;
+    this.message = message;
+  }
+}
+
+export interface IMicroflowConfig {
+  storage?: IMicroflowStorage;
+  jwt: IJwt;
+}
+
+export interface IJwt {
+  secretOrPublicKey: jwt.Secret;
+  sign?: jwt.SignOptions;
+  verify?: jwt.VerifyOptions;
+}
+
+export interface IWorkflow {
+  id: string;
+  config: MicroflowDefinition;
+  definition: MachineConfig<any, any, WorkflowEvent>;
+}
+
+export interface ITask {
+  id: string;
+  type: 'http' | 'other';
+  config: any;
+}
+
+export interface IExecution {
+  id: string;
+  definition: MachineConfig<any, any, WorkflowEvent>;
+  currentJson: any;
+}
 
 export interface WorkflowInput {
   id: string;
@@ -16,26 +56,8 @@ export interface WorkflowInstanceInput {
   currentJson: any;
 }
 
-export interface Workflow {
-  id: string;
-  config: any;
-  definition: any;
-}
-
-export interface Task {
-  id: string;
-  type: 'http' | 'other';
-  config: any;
-}
-
-export interface WorkflowInstance {
-  id: string;
-  definition: any;
-  currentJson: any;
-}
-
 export interface WorkflowEvent extends EventObject {
-  data: any;
+  data?: Record<string, any>;
 }
 
 export interface TaskTokenClaims {
@@ -57,9 +79,9 @@ export type StartWorkflowResponse = {
   id: string;
 };
 
-export type SendEventResponse = SendEventSuccess | SendEventError;
+export type SendEventResponse = SendEventSuccess;
 
-export type MicroflowStateTypes = 'task' | 'generic';
+export type MicroflowStateTypes = 'task' | 'atomic' | 'final';
 
 export interface TransitionConfig {
   target: string;
@@ -69,39 +91,40 @@ export interface TransitionConfig {
 
 export interface StateNodeConfig {
   type: MicroflowStateTypes;
-  taskId?: string;
-  parameters?: Record<string, any>;
   resultSelector?: Record<string, any>;
   resultPath?: string;
-  onDone?: TransitionConfig;
-  onError?: TransitionConfig;
   meta?: Record<string, any>;
   on?: Record<string, TransitionConfig>;
 }
 
-export interface MicroflowDefinition {
-  initial: string;
-  states: Record<string, StateNodeConfig>;
+export interface AtomicNodeConfig extends StateNodeConfig {
+  type: 'atomic';
 }
 
-export abstract class MicroflowStorage {
-  abstract async createWorkflow(workflowInput: Workflow): Promise<Workflow>;
-  abstract async createTask(taskInput: TaskInput): Promise<Task>;
-  abstract async createWorkflowInstance(
-    workflowInstanceInput: WorkflowInstanceInput
-  ): Promise<WorkflowInstance>;
+export interface FinalNodeConfig {
+  type: 'final';
+  meta?: Record<string, any>;
+}
 
-  abstract async getWorkflow(id: string): Promise<Workflow | null>;
-  abstract async getTask(id: string): Promise<Task>;
-  abstract async getWorkflowInstance(id: string): Promise<WorkflowInstance>;
+export interface TaskNodeConfig extends StateNodeConfig {
+  type: 'task';
+  taskId: string;
+  parameters?: Record<string, any>;
+  onDone?: TransitionConfig;
+  onError?: TransitionConfig;
+}
 
-  abstract async updateWorkflow(workflow: Workflow): Promise<Workflow>;
-  abstract async updateTask(task: Task): Promise<Task>;
-  abstract async updateWorkflowInstance(
-    workflowInstance: WorkflowInstance
-  ): Promise<WorkflowInstance>;
+export interface MicroflowDefinition {
+  initial: string;
+  states: Record<
+    string,
+    StateNodeConfig | TaskNodeConfig | FinalNodeConfig | AtomicNodeConfig
+  >;
+  context?: Record<string, any>;
+}
 
-  abstract async deleteWorkflow(id: string): Promise<boolean>;
-  abstract async deleteTask(id: string): Promise<boolean>;
-  abstract async deleteWorkflowInstance(id: string): Promise<boolean>;
+export interface IMicroflowStorage {
+  workflow: ICrudable<IWorkflow, string>;
+  task: ICrudable<ITask, string>;
+  execution: ICrudable<IExecution, string>;
 }

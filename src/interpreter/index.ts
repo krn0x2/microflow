@@ -4,21 +4,22 @@ import {
   EventData,
   Typestate,
   State,
+  AnyEventObject,
 } from 'xstate';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { transform, setOnPath } from '../utils';
 import { WorkflowEvent } from '../types';
 
 export class WorkflowInterpreter extends Interpreter<
   any,
   StateSchema,
-  WorkflowEvent,
+  AnyEventObject,
   Typestate<any>
 > {
   mSend(
     event: WorkflowEvent,
     payload?: EventData
-  ): State<any, WorkflowEvent, StateSchema, Typestate<any>> {
+  ): State<any, AnyEventObject, StateSchema, Typestate<any>> {
     const { type } = event;
     const data = _.get(event, 'data', {});
     const lastEventData = _.get(this.state.event, 'data', {});
