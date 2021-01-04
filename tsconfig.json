@@ -5,6 +5,7 @@
     "declaration": true,
     "declarationMap": true,
     "moduleResolution": "node",
+    "esModuleInterop": true,
     "module": "commonjs",
     "allowJs": true,
     "target": "ES2018"

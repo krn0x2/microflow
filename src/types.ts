@@ -1,10 +1,64 @@
-import { EventObject, StateValue } from 'xstate';
+import jwt from 'jsonwebtoken';
+import {
+  EventObject,
+  MachineConfig,
+  State,
+  StateSchema,
+  StateValue,
+  Typestate
+} from 'xstate';
+import { ICrudable, IModel } from './crudable';
+
+export class Error {
+  code: number;
+  message: string;
+  constructor(code: number, message: string) {
+    this.code = code;
+    this.message = message;
+  }
+}
+
+export interface IMicroflowConfig {
+  storage?: IMicroflowStorage;
+  jwt: IJwt;
+}
+
+export interface IJwt {
+  secretOrPublicKey: jwt.Secret;
+  sign?: jwt.SignOptions;
+  verify?: jwt.VerifyOptions;
+}
+
+export interface IWorkflow extends IModel {
+  config: MicroflowDefinition;
+}
+
+export interface ITask extends IModel {
+  type: 'http' | 'other';
+  config: any;
+}
+
+export interface IExecution extends IModel {
+  config: MicroflowDefinition;
+  definition: MachineConfig<any, any, WorkflowEvent>;
+  currentJson?: State<any, WorkflowEvent, StateSchema<any>, Typestate<any>>;
+}
+
+export interface IDescribeExecution {
+  id: string;
+  config: MicroflowDefinition;
+  state: StateValue;
+  output: Record<string, any>;
+  completed: boolean;
+}
 
 export interface WorkflowInput {
-  definition: any;
+  id: string;
+  config: MicroflowDefinition;
 }
 
 export interface TaskInput {
+  id: string;
   type: 'http' | 'other';
   config: any;
 }
@@ -14,26 +68,15 @@ export interface WorkflowInstanceInput {
   currentJson: any;
 }
 
-export interface Workflow {
-  id: string;
-  definition: any;
-}
-
-export interface Task {
-  id: string;
-  type: 'http' | 'other';
-  config: any;
-}
-
-export interface WorkflowInstance {
-  id: string;
-  definition: any;
-  currentJson: any;
-}
-
 export interface WorkflowEvent extends EventObject {
-  data: any;
+  data?: Record<string, any>;
 }
+
+export interface TaskTokenClaims {
+  workflowInstanceId: string;
+  taskEventSuffix: string;
+}
+
 export type SendEventError = {
   message: string;
 };
@@ -48,28 +91,52 @@ export type StartWorkflowResponse = {
   id: string;
 };
 
-export type SendEventResponse = SendEventSuccess | SendEventError;
+export type SendEventResponse = SendEventSuccess;
 
-export abstract class MicroflowStorage {
-  abstract async createWorkflow(
-    workflowInput: WorkflowInput
-  ): Promise<Workflow>;
-  abstract async createTask(taskInput: TaskInput): Promise<Task>;
-  abstract async createWorkflowInstance(
-    workflowInstanceInput: WorkflowInstanceInput
-  ): Promise<WorkflowInstance>;
+export type MicroflowStateTypes = 'task' | 'atomic' | 'final';
 
-  abstract async getWorkflow(id: string): Promise<Workflow>;
-  abstract async getTask(id: string): Promise<Task>;
-  abstract async getWorkflowInstance(id: string): Promise<WorkflowInstance>;
+export interface TransitionConfig {
+  target: string;
+  resultSelector?: Record<string, any>;
+  resultPath?: string;
+}
 
-  abstract async updateWorkflow(workflow: Workflow): Promise<Workflow>;
-  abstract async updateTask(task: Task): Promise<Task>;
-  abstract async updateWorkflowInstance(
-    workflowInstance: WorkflowInstance
-  ): Promise<WorkflowInstance>;
+export interface StateNodeConfig {
+  type: MicroflowStateTypes;
+  resultSelector?: Record<string, any>;
+  resultPath?: string;
+  meta?: Record<string, any>;
+  on?: Record<string, TransitionConfig>;
+}
 
-  abstract async deleteWorkflow(id: string): Promise<boolean>;
-  abstract async deleteTask(id: string): Promise<boolean>;
-  abstract async deleteWorkflowInstance(id: string): Promise<boolean>;
+export interface AtomicNodeConfig extends StateNodeConfig {
+  type: 'atomic';
+}
+
+export interface FinalNodeConfig {
+  type: 'final';
+  meta?: Record<string, any>;
+}
+
+export interface TaskNodeConfig extends StateNodeConfig {
+  type: 'task';
+  taskId: string;
+  parameters?: Record<string, any>;
+  onDone?: TransitionConfig;
+  onError?: TransitionConfig;
+}
+
+export interface MicroflowDefinition {
+  initial: string;
+  states: Record<
+    string,
+    StateNodeConfig | TaskNodeConfig | FinalNodeConfig | AtomicNodeConfig
+  >;
+  context?: Record<string, any>;
+}
+
+export interface IMicroflowStorage {
+  workflow: ICrudable<IWorkflow>;
+  task: ICrudable<ITask>;
+  execution: ICrudable<IExecution>;
 }

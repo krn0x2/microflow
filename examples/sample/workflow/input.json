@@ -1,0 +1,94 @@
+{
+  "initial": "waiting",
+  "states": {
+    "waiting": {
+      "on": {
+        "start_test": {
+          "target": "auto_test_1"
+        }
+      }
+    },
+    "auto_test_1": {
+      "type": "task",
+      "taskId": "airflow",
+      "parameters": {
+        "dagId": "dag1",
+        "data": "$"
+      },
+      "resultSelector": {
+        "foo": "bar",
+        "baz": "har",
+        "message": "$.message",
+        "dag_execution_date": "$.execution_date"
+      },
+      "resultPath": "$.pipeline1.apiResponse",
+      "onDone": {
+        "target": "ready_for_approval",
+        "resultSelector": {
+          "a": "a",
+          "b": "b",
+          "out": "$"
+        },
+        "resultPath": "$.pipeline1.success"
+      },
+      "onError": {
+        "target": "failed",
+        "resultSelector": {
+          "c": "c",
+          "d": "d",
+          "out": "$"
+        },
+        "resultPath": "$.pipeline1.error"
+      }
+    },
+    "ready_for_approval": {
+      "on": {
+        "reject": {
+          "target": "failed",
+          "resultPath": "$.reject.data"
+        },
+        "approve": {
+          "target": "auto_test_2",
+          "resultPath": "$.approval.data"
+        }
+      }
+    },
+    "auto_test_2": {
+      "type": "task",
+      "taskId": "airflow",
+      "parameters": {
+        "dagId": "dag2",
+        "data": "$"
+      },
+      "resultSelector": {
+        "foo": "bar",
+        "baz": "har",
+        "message": "$.message",
+        "dag_execution_date": "$.execution_date"
+      },
+      "resultPath": "$.pipeline2.apiResponse",
+      "onDone": {
+        "target": "done",
+        "resultSelector": {
+          "e": "e",
+          "out": "$"
+        },
+        "resultPath": "$.pipeline2.success"
+      },
+      "onError": {
+        "target": "failed",
+        "resultSelector": {
+          "f": "f",
+          "out": "$"
+        },
+        "resultPath": "$.pipeline2.error"
+      }
+    },
+    "done": {
+      "type": "final"
+    },
+    "failed": {
+      "type": "final"
+    }
+  }
+}
