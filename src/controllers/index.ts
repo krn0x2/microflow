@@ -1,15 +1,15 @@
 import { ICrudable, IModel } from '../crudable';
 import { IJwt, IMicroflowStorage } from '../types';
 
-export class EntityController<T extends IModel<K>, K> {
+export class EntityController<T extends IModel> {
   private model: T;
-  private store: ICrudable<T, K>;
+  private store: ICrudable<T>;
   protected storage: IMicroflowStorage;
   protected jwt: IJwt;
 
   constructor(
     model: T,
-    store: ICrudable<T, K>,
+    store: ICrudable<T>,
     storage: IMicroflowStorage,
     jwt: IJwt
   ) {
@@ -23,7 +23,7 @@ export class EntityController<T extends IModel<K>, K> {
     return this.store.read(this.model.id);
   }
 
-  async update(data: Partial<T>): Promise<T> {
+  async update(data: Partial<Omit<T, 'id'>>): Promise<T> {
     return this.store.update(this.model.id, data);
   }
 }

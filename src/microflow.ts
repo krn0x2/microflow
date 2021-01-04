@@ -7,7 +7,6 @@ import {
   IMicroflowStorage,
   IMicroflowConfig,
   TaskTokenClaims,
-  SendEventResponse,
   IWorkflow,
   ITask,
   IExecution
@@ -21,9 +20,9 @@ export class Microflow {
 
   public storage: IMicroflowStorage;
 
-  public workflow: MicroflowCore<IWorkflow, string, Workflow>;
-  public task: MicroflowCore<ITask, string, Task>;
-  public execution: MicroflowCore<IExecution, string, Execution>;
+  public workflow: MicroflowCore<IWorkflow, Workflow>;
+  public task: MicroflowCore<ITask, Task>;
+  public execution: MicroflowCore<IExecution, Execution>;
 
   constructor(config: IMicroflowConfig) {
     const { storage, jwt } = config;
@@ -62,7 +61,7 @@ export class Microflow {
   async sendTaskSuccess(
     token: string,
     data: Record<string, any>
-  ): Promise<SendEventResponse> {
+  ): Promise<Execution> {
     try {
       const { taskEventSuffix, workflowInstanceId } = this.claimsFromTaskToken(
         token
@@ -82,7 +81,7 @@ export class Microflow {
   async sendTaskFailure(
     token: string,
     data: Record<string, any>
-  ): Promise<SendEventResponse> {
+  ): Promise<Execution> {
     try {
       const { taskEventSuffix, workflowInstanceId } = this.claimsFromTaskToken(
         token

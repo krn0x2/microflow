@@ -1,4 +1,10 @@
+import jwt from 'jsonwebtoken';
 import { Microflow } from '../src/microflow';
+
+const getTaskToken = (id, task) =>
+  jwt.sign({ workflowInstanceId: id, taskEventSuffix: task }, 'shhhhh', {
+    expiresIn: '24h'
+  });
 
 const flow = new Microflow({
   jwt: {
@@ -9,7 +15,11 @@ const flow = new Microflow({
   }
 });
 
-test('test transitions', async () => {
+test('test transitions with tokens', async () => {
+  // console.log('============');
+  // console.log((await flow.task.read('airflow')).data);
+  // console.log((await flow.workflow.read('sample')).data);
+  // console.log('============');
   const task = await flow.task.create({
     id: 'airflow',
     type: 'http',
@@ -126,22 +136,20 @@ test('test transitions', async () => {
           type: 'final'
         }
       }
-    },
-    definition: {}
+    }
   });
 
   const execution = await workflow.start();
+
+  const { id: executionId } = await execution.data();
 
   await execution.send({
     type: 'start_test',
     data: { a: 1, b: 2 }
   });
 
-  await execution.send({
-    type: 'success-auto_test_1',
-    data: {
-      ok: 'cupid'
-    }
+  await flow.sendTaskSuccess(getTaskToken(executionId, 'auto_test_1'), {
+    ok: 'cupid'
   });
 
   await execution.send({
@@ -151,14 +159,18 @@ test('test transitions', async () => {
     }
   });
 
-  const { completed, currentState } = await execution.send({
-    type: 'success-auto_test_2',
-    data: {
+  await flow.sendTaskSuccess(
+    getTaskToken(executionId, 'auto_test_2'),
+    {
       c: 'wee'
     }
-  });
+  );
+  
+  console.log(await execution.data())
 
-  console.log(currentState, completed);
+  const { completed } = await execution.describe();
+
+  console.log(completed);
   // there will be no TS error here, and you'll have completion in modern IDEs
 
   // same here

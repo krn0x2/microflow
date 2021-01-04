@@ -1,6 +1,13 @@
 import jwt from 'jsonwebtoken';
-import { EventObject, MachineConfig, StateValue } from 'xstate';
-import { ICrudable } from './crudable';
+import {
+  EventObject,
+  MachineConfig,
+  State,
+  StateSchema,
+  StateValue,
+  Typestate
+} from 'xstate';
+import { ICrudable, IModel } from './crudable';
 
 export class Error {
   code: number;
@@ -22,22 +29,27 @@ export interface IJwt {
   verify?: jwt.VerifyOptions;
 }
 
-export interface IWorkflow {
-  id: string;
+export interface IWorkflow extends IModel {
   config: MicroflowDefinition;
-  definition: MachineConfig<any, any, WorkflowEvent>;
 }
 
-export interface ITask {
-  id: string;
+export interface ITask extends IModel {
   type: 'http' | 'other';
   config: any;
 }
 
-export interface IExecution {
-  id: string;
+export interface IExecution extends IModel {
+  config: MicroflowDefinition;
   definition: MachineConfig<any, any, WorkflowEvent>;
-  currentJson: any;
+  currentJson?: State<any, WorkflowEvent, StateSchema<any>, Typestate<any>>;
+}
+
+export interface IDescribeExecution {
+  id: string;
+  config: MicroflowDefinition;
+  state: StateValue;
+  output: Record<string, any>;
+  completed: boolean;
 }
 
 export interface WorkflowInput {
@@ -124,7 +136,7 @@ export interface MicroflowDefinition {
 }
 
 export interface IMicroflowStorage {
-  workflow: ICrudable<IWorkflow, string>;
-  task: ICrudable<ITask, string>;
-  execution: ICrudable<IExecution, string>;
+  workflow: ICrudable<IWorkflow>;
+  task: ICrudable<ITask>;
+  execution: ICrudable<IExecution>;
 }

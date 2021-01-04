@@ -8,13 +8,13 @@ export class DefaultStorage implements IMicroflowStorage {
     tasks: new Map(),
     executions: new Map()
   };
-  workflow: ICrudable<IWorkflow, string>;
-  task: ICrudable<ITask, string>;
-  execution: ICrudable<IExecution, string>;
+  workflow: ICrudable<IWorkflow>;
+  task: ICrudable<ITask>;
+  execution: ICrudable<IExecution>;
 
   constructor() {
-    this.workflow = new LocalCrud<IWorkflow, string>(this.memory.workflows);
-    this.task = new LocalCrud<ITask, string>(this.memory.tasks);
-    this.execution = new LocalCrud<IExecution, string>(this.memory.executions);
+    this.workflow = new LocalCrud<IWorkflow>(this.memory.workflows);
+    this.task = new LocalCrud<ITask>(this.memory.tasks);
+    this.execution = new LocalCrud<IExecution>(this.memory.executions);
   }
 }

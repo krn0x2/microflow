@@ -32,7 +32,7 @@ export const taskCreator = (
     },
     '$$'
   );
-  console.log(tokenized);
+  // console.log(tokenized);
   const res = await axios(tokenized);
   const response = res.data;
   const resultSelected = transform(resultSelector, response);
