@@ -1,6 +1,6 @@
 {
   "name": "microflow",
-  "version": "3.0.0-alpha",
+  "version": "3.0.0-alpha.0",
   "description": "Finite state machine based HTTP microservice orchestration",
   "keywords": [
     "workflow",
@@ -22,7 +22,6 @@
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.20",
     "nanoid": "^3.1.20",
-    "uuid": "^8.3.1",
     "xstate": "^4.14.0"
   },
   "devDependencies": {
