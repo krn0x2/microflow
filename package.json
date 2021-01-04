@@ -1,6 +1,6 @@
 {
   "name": "microflow",
-  "version": "3.0.0-alpha.0",
+  "version": "3.0.0-alpha.2",
   "description": "Finite state machine based HTTP microservice orchestration",
   "keywords": [
     "workflow",
@@ -13,7 +13,7 @@
     "lib/**/*.js",
     "lib/**/*.d.ts"
   ],
-  "main": "lib/index.js",
+  "main": "lib/microflow.js",
   "dependencies": {
     "axios": "^0.21.0",
     "bluebird": "^3.7.2",
