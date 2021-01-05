@@ -1,6 +1,6 @@
 {
   "name": "microflow",
-  "version": "3.0.0-alpha.2",
+  "version": "3.0.0-alpha.3",
   "description": "Finite state machine based HTTP microservice orchestration",
   "keywords": [
     "workflow",
