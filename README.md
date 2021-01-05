@@ -28,7 +28,7 @@ A workflow consists of manual states and __task__ states (aka HTTP workers which
 ## Install
 npm
 ```sh
-npm i --save microflow
+npm i --save microflow@alpha
 ```
 
 ## Documentation
@@ -37,32 +37,23 @@ The `Microflow` class provides various methods to author/execute/infer workflow 
 
 ```javascript
 import { Microflow } from "microflow";
-const flow = new Microflow();
+
+const flow = new Microflow({
+  jwt: {
+    secretOrPublicKey: 'dummySecretKey',
+    sign: {
+      expiresIn: '1h'
+    }
+  }
+});
+
 const {
-  // create task
-  createTask,
-  // create/put workflow
-  createWorkflow,
-  // get task
-  getTask,
-  // get workflow
-  getWorkflow,
-
-  // start workflow instance
-  startWorkflow,
-  // send event to workflow instance
-  sendEvent,
-  // get workflow instance details (useful for UI)
-  getWorkflowInstance,
-
-  // update task
-  updateTask
-  // update workflow
-  updateWorkflow
-  // delete task
-  deleteTask
-  // delete workflow
-  deleteWorkflow
+  // task interface
+  task,
+  // workflow interface
+  workflow,
+  // execution interface
+  execution,
 } = flow;
 ```
 
@@ -72,14 +63,23 @@ const {
 import { Microflow } from "microflow";
 
 const flow = new Microflow({
-  // bring your own storage connector for persistence
-  storage: null
+  // bring your own persistence here 
+  // (implements MicroflowStorage)
+  storage: undefined,
+  jwt: {
+    secretOrPublicKey: 'dummySecretKey',
+    sign: {
+      expiresIn: '1h'
+    }
+  }
 });
 
 // Authoring task and workflow
 
 // Register a task
-const task = await flow.createTask({
+const task = await flow.task.create({
+  // Recognisiable identified for the task
+  id: "airflow",
   // type of task (only 'http' supported right now)
   type: "http",
   //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
@@ -94,131 +94,134 @@ const task = await flow.createTask({
   }
 });
 
-// Register a workflow
-const workflow = await flow.createWorkflow({
-  definition: {
-    initial: "waiting",
+const { id: taskId } = await task.data();
+
+// Create a workflow
+const workflow = await flow.workflow.create({
+  id: 'sample',
+  config: {
+    initial: 'auto_test_1',
     states: {
-      waiting: {
-        on: {
-          start_pipeline: {
-            target: "start_dag",
-          },
+      auto_test_1: {
+        type: 'task',
+        taskId,
+        parameters: {
+          dagId: 'dag1',
+          data: '$'
         },
-      },
-      start_dag: {
-        invoke: {
-          src: {
-            type: "task",
-            taskId: task.id,
-            config: {
-              parameters: {
-                dagId: "dag1",
-                data: "$",
-              },
-              resultSelector: {
-                foo: "bar",
-                baz: "har",
-                message: "$.message",
-                dag_execution_date: "$.execution_date",
-              },
-              resultPath: "$.pipeline.startDetails",
-            },
-          },
-          onDone: {
-            target: "pipeline_running",
-          },
-          onError: {
-            target: "failed",
-          },
+        resultSelector: {
+          foo: 'bar',
+          baz: 'har',
+          message: '$.message',
+          dag_execution_date: '$.execution_date'
         },
-      },
-      pipeline_running: {
-        on: {
-          test_complete: {
-            target: "ready_for_approval",
-            meta: {
-              config: {
-                resultPath: "$.pipeline.output",
-              },
-            },
+        resultPath: '$.pipeline1.apiResponse',
+        onDone: {
+          target: 'ready_for_approval',
+          resultSelector: {
+            a: 'a',
+            b: 'b',
+            out: '$'
           },
+          resultPath: '$.pipeline1.success'
         },
+        onError: {
+          target: 'failed',
+          resultSelector: {
+            c: 'c',
+            d: 'd',
+            out: '$'
+          },
+          resultPath: '$.pipeline1.error'
+        }
       },
       ready_for_approval: {
+        type: 'atomic',
         on: {
-          approve: {
-            target: "done",
-          },
           reject: {
-            target: "failed",
+            target: 'failed',
+            resultPath: '$.reject.data'
           },
+          approve: {
+            target: 'auto_test_2',
+            resultPath: '$.approval.data'
+          }
+        }
+      },
+      auto_test_2: {
+        type: 'task',
+        taskId,
+        parameters: {
+          dagId: 'dag2',
+          data: '$'
         },
+        resultSelector: {
+          foo: 'bar',
+          baz: 'har',
+          message: '$.message',
+          dag_execution_date: '$.execution_date'
+        },
+        resultPath: '$.pipeline2.apiResponse',
+        onDone: {
+          target: 'done',
+          resultSelector: {
+            e: 'e',
+            out: '$'
+          },
+          resultPath: '$.pipeline2.success'
+        },
+        onError: {
+          target: 'failed',
+          resultSelector: {
+            f: 'f',
+            out: '$'
+          },
+          resultPath: '$.pipeline2.error'
+        }
       },
       done: {
-        type: "final",
+        type: 'final'
       },
       failed: {
-        type: "final",
-      },
-    },
-  },
-});
-
-// Executing workflow aka "workflow instances"
-
-const { id } = await flow.startWorkflow(workflow.id);
-
-// Sending events to workflow instance
-const response1 = await flow.sendEvent(id, {
-    type: "start_pipeline"
-});
-
-// The above event will automatically fire the HTTP request configured in the task
-/*
-response1 = {
-    "currentState": "pipeline_running",
-    "completed": false,
-    "nextEvents": [
-        "test_complete"
-    ]
-}
-*/
-
-// Sending events to workflow instance
-const response2 = await flow.sendEvent(id, {
-    type: "test_complete",
-    data: {
-      kfold: 0.76,
-      blind : 0.60
+        type: 'final'
+      }
     }
-});
-
-/*
-response2 = {
-    "currentState": "ready_for_approval",
-    "completed": false,
-    "nextEvents": [
-        "reject",
-        "approve"
-    ]
-}
-*/
-
-const response3 = await flow.sendEvent(id, {
-  type: "approve",
-  data: {
-      comment: "fair enough"
   }
 });
 
-/*
-response3 = {
-    "currentState": "done",
-    "completed": true,
-    "nextEvents": []
-}
-*/
+// start an execution with initial data
+const execution = await workflow.start({
+  input1: 'val1',
+  input2: 'val2'
+});
+
+// Sending events to an execution
+await execution.send({
+  type: 'success-auto_test_1',
+  data: {
+    test_a_result: true,
+    test_b_result: false
+  }
+});
+
+await execution.send({
+  type: 'approve',
+  data: {
+    message: 'The acceptance test was fine'
+  }
+});
+
+await execution.send({
+  type: 'success-auto_test_2',
+  data: {
+    test_c_result: true
+  }
+});
+
+const { completed, output, state } = await execution.describe();
+
+console.log(output, completed, state);
+
 ```
 ## Storage
 
@@ -227,15 +230,38 @@ import { Microflow } from "microflow";
 import { MicroflowStorage } from "microflow/types";
 
 // define your own storage from MicroflowStorage abstract class
-class MyStorage implements MicroflowStorage {
+class MyStorage implements IMicroflowStorage {
+  workflow: ICrudable<IWorkflow>;
+  task: ICrudable<ITask>;
+  execution: ICrudable<IExecution>;
   // define CRUD functions
+  constructor(){
+    this.workflow = {
+      //define CRUD implementation here
+    }
+
+    this.task = {
+      //define CRUD implementation here
+    }
+
+    this.execution = {
+      //define CRUD implementation here
+    }
+  }
 }
+
 
 const store = new MyStorage();
 
 // create an instance of microflow with custom store injected
 const flow = new Microflow({
-  storage: store
+  storage: store,
+  jwt: {
+    secretOrPublicKey: 'dummySecretKey',
+    sign: {
+      expiresIn: '1h'
+    }
+  }
 });
 ```
 
