@@ -2,22 +2,11 @@ import _ from 'lodash';
 import { Promise as BluebirdPromise } from 'bluebird';
 import { State } from 'xstate';
 import { WorkflowInterpreter } from '../interpreter';
-import { IDescribeExecution, IExecution, WorkflowEvent } from '../types';
+import { IExecution, WorkflowEvent } from '../types';
 import { getMachine } from '../utils/xstate';
 import { EntityController } from '.';
 
 export class Execution extends EntityController<IExecution> {
-  async describe(): Promise<IDescribeExecution> {
-    const { currentJson, id, config } = await this.data();
-    return {
-      id,
-      config,
-      state: currentJson.value,
-      output: currentJson.event.data,
-      completed: currentJson.done
-    };
-  }
-
   async send(event: WorkflowEvent): Promise<Execution> {
     const { definition, currentJson } = await this.data();
     const fetchMachine = getMachine(
@@ -38,12 +27,12 @@ export class Execution extends EntityController<IExecution> {
     return new BluebirdPromise<Execution>((res) => {
       service
         .onTransition(async (state) => {
-          // console.log('State=>', state.value);
-          // console.log('Own Event=>', _.get(state, 'event.data', {}));
-          // console.log('Event=>', event);
           if (state.changed && _.isEmpty(state.children)) {
             await this.update({
-              currentJson: state
+              currentJson: state,
+              state: state.value,
+              output: state.event.data,
+              completed: state.done
             });
             res(this);
           }

@@ -161,11 +161,7 @@ test('test transitions', async () => {
     }
   });
 
-  const { completed, output, state } = await execution.describe();
+  const { completed } = await execution.data();
 
-  console.log(output, completed, state);
-  // there will be no TS error here, and you'll have completion in modern IDEs
-
-  // same here
   expect(completed).toBe(true);
 });

@@ -37,22 +37,24 @@ export class Workflow extends EntityController<IWorkflow> {
   async start(data: Record<string, any> = {}): Promise<Execution> {
     const { config } = await this.data();
     const definition = await transformConfig(config, this.getTask);
-    const execution = await this.execution.create({
-      config,
-      definition
-    });
-    const { id: executionId } = await execution.data();
     const workflowMachine = getMachine(
-      {
-        ...definition,
-        context: { wfid: executionId }
-      },
+      definition,
       this.jwt.secretOrPublicKey,
       this.jwt.sign
     );
     const { initialState } = workflowMachine;
+    const execution = await this.execution.create({
+      config,
+      definition,
+      state: initialState.value,
+      completed: initialState.done
+    });
+    const { id: executionId } = await execution.data();
+    const { initialState: currentJson } = workflowMachine.withContext({
+      wfid: executionId
+    });
     await this.execution.update(executionId, {
-      currentJson: initialState
+      currentJson
     });
     return execution.send({ type: 'data', data });
   }

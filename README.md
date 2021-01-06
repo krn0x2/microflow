@@ -1,7 +1,7 @@
 <h1 align="center">Welcome to microflow 👋</h1>
 <p>
   <a href="https://www.npmjs.com/package/microflow" target="_blank">
-    <img alt="Version" src="https://img.shields.io/npm/v/microflow.svg">
+    <img alt="Version" src="https://img.shields.io/npm/v/microflow/alpha.svg">
   </a>
   <a href="https://github.com/krn0x2/microflow#readme" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
@@ -89,7 +89,10 @@ const task = await flow.task.create({
       "Cache-Control": "no-cache",
       "Content-Type": "application/json"
     },
-    data: "$.data",
+    data: {
+      actualData: '$.data',
+      token: '$$.task.token'
+    },
     method: "post"
   }
 });
@@ -218,7 +221,7 @@ await execution.send({
   }
 });
 
-const { completed, output, state } = await execution.describe();
+const { completed, output, state } = await execution.data();
 
 console.log(output, completed, state);
 

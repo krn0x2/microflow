@@ -66,7 +66,7 @@ app.post(`/${PATH}/workflow/:id/start`, async (req, res) => {
   const { id } = params;
   const workflow = await microflowService.workflow.read(id);
   const execution = await workflow.start(body);
-  const response = await execution.describe();
+  const response = await execution.data();
   return res.status(200).json(response);
 });
 
@@ -76,7 +76,7 @@ app.post(`/${PATH}/workflow/instance/:id/event`, async (req, res) => {
   const { id } = params;
   const execution = await microflowService.execution.read(id);
   await execution.send(body);
-  const response = await execution.describe();
+  const response = await execution.data();
   return res.status(200).json(response);
 });
 
@@ -89,7 +89,7 @@ app.get(`/${PATH}/task-success`, async (req, res) => {
     token as string,
     body
   );
-  const response = await execution.describe();
+  const response = await execution.data();
   return res.status(200).json(response);
 });
 
@@ -101,7 +101,7 @@ app.get(`/${PATH}/task-failure`, async (req, res) => {
     token as string,
     body
   );
-  const response = await execution.describe();
+  const response = await execution.data();
   return res.status(200).json(response);
 });
 
@@ -109,7 +109,7 @@ app.get(`/${PATH}/task-failure`, async (req, res) => {
 app.get(`/${PATH}/workflow/instance/:id`, async (req, res) => {
   const { id } = req.params;
   const execution = await microflowService.execution.read(id);
-  const response = await execution.describe();
+  const response = await execution.data();
   res.status(200).json(response);
 });
 

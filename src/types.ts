@@ -39,16 +39,12 @@ export interface ITask extends IModel {
 }
 
 export interface IExecution extends IModel {
+  name?: string;
   config: MicroflowDefinition;
   definition: MachineConfig<any, any, WorkflowEvent>;
   currentJson?: State<any, WorkflowEvent, StateSchema<any>, Typestate<any>>;
-}
-
-export interface IDescribeExecution {
-  id: string;
-  config: MicroflowDefinition;
   state: StateValue;
-  output: Record<string, any>;
+  output?: Record<string, any>;
   completed: boolean;
 }
 
