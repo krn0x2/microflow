@@ -79,21 +79,23 @@ const flow = new Microflow({
 // Register a task
 const task = await flow.task.create({
   // Recognisiable identified for the task
-  id: "airflow",
+  id: 'airflow',
   // type of task (only 'http' supported right now)
-  type: "http",
+  type: 'http',
   //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
   config: {
-    url: "http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs",
+    url: 'http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs',
     headers: {
-      "Cache-Control": "no-cache",
-      "Content-Type": "application/json"
+      'Cache-Control': 'no-cache',
+      'Content-Type': 'application/json'
     },
     data: {
-      actualData: '$.data',
-      token: '$$.task.token'
+      config: {
+        extraData: '$.data',
+        token: '$$.task.token'
+      }
     },
-    method: "post"
+    method: 'post'
   }
 });
 
@@ -223,7 +225,38 @@ await execution.send({
 
 const { completed, output, state } = await execution.data();
 
-console.log(output, completed, state);
+console.log(output);
+/*
+{
+  input1: 'val1',
+  input2: 'val2',
+  pipeline1: {
+    apiResponse: {
+      foo: 'bar',
+      baz: 'har',
+      message:
+        'Created <DagRun dag1 @ 2021-01-06 15:23:02+00:00: manual__2021-01-06T15:23:02+00:00, externally triggered: True>',
+      dag_execution_date: '2021-01-06T15:23:02+00:00'
+    },
+    success: {
+      a: 'a',
+      b: 'b',
+      out: { test_a_result: true, test_b_result: false }
+    }
+  },
+  approval: { data: { message: 'The acceptance test was fine' } },
+  pipeline2: {
+    apiResponse: {
+      foo: 'bar',
+      baz: 'har',
+      message:
+        'Created <DagRun dag2 @ 2021-01-06 15:23:02+00:00: manual__2021-01-06T15:23:02+00:00, externally triggered: True>',
+      dag_execution_date: '2021-01-06T15:23:02+00:00'
+    },
+    success: { e: 'e', out: { test_c_result: true } }
+  }
+}
+*/
 
 ```
 ## Storage
