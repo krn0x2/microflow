@@ -18,6 +18,13 @@ export class Error {
   }
 }
 
+export type SingleOrArray<T> = T[] | T;
+
+export type ITransform =
+  | SingleOrArray<string>
+  | SingleOrArray<number>
+  | SingleOrArray<Record<string, any>>;
+
 export interface IMicroflowConfig {
   storage?: IMicroflowStorage;
   jwt: IJwt;

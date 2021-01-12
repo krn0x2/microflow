@@ -1,34 +1,37 @@
 import { JSONPath } from 'jsonpath-plus';
 import * as _ from 'lodash';
 import * as handlebars from 'handlebars';
+import { ITransform } from '../types';
 
-const transform = (obj = null, root, identifier = '$') =>
-  _.isNull(obj)
-    ? root
-    : _.mapValues(obj, (val) => {
-        if (_.isString(val)) {
-          if (_.startsWith(val, `${identifier}.`) || val === identifier)
-            return _.head(
-              JSONPath({
-                path:
-                  val === identifier
-                    ? '$'
-                    : _.replace(val, `${identifier}.`, '$.'),
-                json: root
-              })
-            );
-          return handlebars.compile(val)(root);
-        }
+const transform = <T extends ITransform = Record<string, any>>(
+  obj: T,
+  root: Record<string, any>,
+  identifier = '$'
+): T => {
+  if (_.isString(obj)) {
+    if (_.startsWith(obj, `${identifier}.`) || obj === identifier)
+      return _.head(
+        JSONPath({
+          path:
+            obj === identifier ? '$' : _.replace(obj, `${identifier}.`, '$.'),
+          json: root
+        })
+      );
+    return handlebars.compile(obj)(root) as T;
+  } else if (_.isArray(obj)) {
+    return _.map(obj, (x) => transform(x, root, identifier)) as T;
+  } else if (_.isObject(obj)) {
+    return _.mapValues(obj, (x) => transform(x, root, identifier)) as T;
+  } else {
+    return obj;
+  }
+};
 
-        if (_.isPlainObject(val)) return transform(val, root, identifier);
-
-        if (_.isArray(val))
-          return _.map(val, (x) => transform(x, root, identifier));
-
-        return val;
-      });
-
-const setOnPath = (root, path = '$', obj) => {
+const setOnPath = (
+  root: Record<string, any>,
+  path = '$',
+  obj: Record<string, any>
+): Record<string, any> => {
   if (path === '$') return obj;
   const lodashPath = _.trimStart(path, '$.');
   return _.set(_.clone(root), lodashPath, obj);
