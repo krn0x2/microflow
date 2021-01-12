@@ -11,8 +11,11 @@ const flow = new Microflow({
 
 test('test transitions', async () => {
   const task = await flow.task.create({
+    // Recognisiable identified for the task
     id: 'airflow',
+    // type of task (only 'http' supported right now)
     type: 'http',
+    //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
     config: {
       url: 'http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs',
       headers: {
@@ -20,8 +23,10 @@ test('test transitions', async () => {
         'Content-Type': 'application/json'
       },
       data: {
-        actualData: '$.data',
-        token: '$$.task.token'
+        config: {
+          extraData: '$.data',
+          token: '$$.task.token'
+        }
       },
       method: 'post'
     }
@@ -29,6 +34,7 @@ test('test transitions', async () => {
 
   const { id: taskId } = await task.data();
 
+  // Create a workflow
   const workflow = await flow.workflow.create({
     id: 'sample',
     config: {
@@ -121,29 +127,32 @@ test('test transitions', async () => {
     }
   });
 
+  // start an execution with initial data
   const execution = await workflow.start({
-    input1: 'karan',
-    input2: 'chhabra'
+    input1: 'val1',
+    input2: 'val2'
   });
 
+  // Sending events to an execution
   await execution.send({
     type: 'success-auto_test_1',
     data: {
-      ok: 'cupid'
+      test_a_result: true,
+      test_b_result: false
     }
   });
 
   await execution.send({
     type: 'approve',
     data: {
-      notok: 'cupido'
+      message: 'The acceptance test was fine'
     }
   });
 
   await execution.send({
     type: 'success-auto_test_2',
     data: {
-      c: 'wee'
+      test_c_result: true
     }
   });
 
