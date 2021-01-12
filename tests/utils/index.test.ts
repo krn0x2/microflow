@@ -1,6 +1,6 @@
 import { transform, setOnPath } from '../../src/utils/index';
 
-describe('Transform function', () => {
+describe('transform function', () => {
   test('object input and root', () => {
     const output = transform(
       {
@@ -25,6 +25,40 @@ describe('Transform function', () => {
       c: undefined,
       d: 'constant',
       e: { f: 'constant', g: 'val1', h: { key1: 'val1', key2: 'val2' } }
+    });
+  });
+
+  test('object input and root, access array indices', () => {
+    const output = transform(
+      {
+        a: '$',
+        b: '$.key1[1]',
+        c: '$.jabber',
+        d: 'constant',
+        e: {
+          f: 'constant',
+          g: '$.key1',
+          h: '$'
+        }
+      },
+      {
+        key1: ['val1', 'val2'],
+        key2: 'val3'
+      }
+    );
+    expect(output).toEqual({
+      a: { key1: ['val1', 'val2'], key2: 'val3' },
+      b: 'val2',
+      c: undefined,
+      d: 'constant',
+      e: {
+        f: 'constant',
+        g: ['val1', 'val2'],
+        h: {
+          key1: ['val1', 'val2'],
+          key2: 'val3'
+        }
+      }
     });
   });
 
@@ -153,5 +187,50 @@ describe('Transform function', () => {
       },
       method: 'post'
     });
+  });
+});
+
+describe('setOnPath function', () => {
+  test('default path', () => {
+    const output = setOnPath({ a: 1, b: 2 }, '$', { c: 3, d: 4 });
+    expect(output).toEqual({ c: 3, d: 4 });
+  });
+
+  test('empty object, default path', () => {
+    const output = setOnPath({ a: 1, b: 2 }, '$', {});
+    expect(output).toEqual({});
+  });
+
+  test('empty object', () => {
+    const output = setOnPath({ a: 1, b: 2 }, '$.c', {});
+    expect(output).toEqual({ a: 1, b: 2, c: {} });
+  });
+
+  test('empty root, default path', () => {
+    const output = setOnPath({}, '$', { c: 3, d: 4 });
+    expect(output).toEqual({ c: 3, d: 4 });
+  });
+
+  test('empty root', () => {
+    const output = setOnPath({}, '$.a', { c: 3, d: 4 });
+    expect(output).toEqual({ a: { c: 3, d: 4 } });
+  });
+
+  test('should overwrite key', () => {
+    const output = setOnPath({ a: 1, b: 2 }, '$.b', { c: 3, d: 4 });
+    expect(output).toEqual({ a: 1, b: { c: 3, d: 4 } });
+  });
+
+  test('should write nested key', () => {
+    const output = setOnPath({ a: 1, b: 2 }, '$.c.d', { c: 3, d: 4 });
+    expect(output).toEqual({ a: 1, b: 2, c: { d: { c: 3, d: 4 } } });
+  });
+
+  test('should overwrite nested key', () => {
+    const output = setOnPath({ a: 1, b: 2, c: { d: 3 } }, '$.c.d', {
+      c: 3,
+      d: 4
+    });
+    expect(output).toEqual({ a: 1, b: 2, c: { d: { c: 3, d: 4 } } });
   });
 });
