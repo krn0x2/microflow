@@ -11,8 +11,11 @@ const flow = new Microflow({
 
 test('test transitions', async () => {
   const task = await flow.task.create({
+    // Recognisiable identified for the task
     id: 'airflow',
+    // type of task (only 'http' supported right now)
     type: 'http',
+    //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
     config: {
       url: 'http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs',
       headers: {
@@ -20,8 +23,9 @@ test('test transitions', async () => {
         'Content-Type': 'application/json'
       },
       data: {
-        actualData: '$.data',
-        token: '$$.task.token'
+        config: {
+          extraData: '$.data'
+        }
       },
       method: 'post'
     }
@@ -29,22 +33,14 @@ test('test transitions', async () => {
 
   const { id: taskId } = await task.data();
 
+  // Create a workflow
   const workflow = await flow.workflow.create({
     id: 'sample',
     config: {
-      initial: 'waiting',
+      initial: 'auto_test_1',
       states: {
-        waiting: {
-          type: 'atomic',
-          on: {
-            start_test: {
-              target: 'auto_test_1',
-              resultPath: '$.trial'
-            }
-          }
-        },
         auto_test_1: {
-          type: 'task',
+          type: 'taskSync',
           taskId,
           parameters: {
             dagId: 'dag1',
@@ -83,7 +79,7 @@ test('test transitions', async () => {
           }
         },
         auto_test_2: {
-          type: 'task',
+          type: 'taskSync',
           taskId,
           parameters: {
             dagId: 'dag2',
@@ -116,63 +112,36 @@ test('test transitions', async () => {
     }
   });
 
+  // start an execution with initial data
   const execution = await workflow.start({
-    input1: 'karan',
-    input2: 'chhabra'
-  });
-
-  await execution.send({
-    type: 'start_test',
-    data: { a: 1, b: 2 }
-  });
-
-  await execution.send({
-    type: 'success-auto_test_1',
-    data: {
-      ok: 'cupid'
-    }
+    input1: 'val1',
+    input2: 'val2'
   });
 
   await execution.send({
     type: 'approve',
     data: {
-      notok: 'cupido'
-    }
-  });
-
-  await execution.send({
-    type: 'success-auto_test_2',
-    data: {
-      c: 'wee'
+      message: 'The acceptance test was fine'
     }
   });
 
   const { completed, output } = await execution.data();
   expect(completed).toBe(true);
   expect(output).toMatchObject({
-    input1: 'karan',
-    input2: 'chhabra',
-    trial: { a: 1, b: 2 },
+    input1: 'val1',
+    input2: 'val2',
     pipeline1: {
       success: {
         a: 'a',
         b: 'b',
-        out: {
-          ok: 'cupid'
-        }
+        out: {}
       }
     },
-    approval: {
-      data: {
-        notok: 'cupido'
-      }
-    },
+    approval: { data: { message: 'The acceptance test was fine' } },
     pipeline2: {
       success: {
         e: 'e',
-        out: {
-          c: 'wee'
-        }
+        out: {}
       }
     }
   });

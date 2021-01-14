@@ -5,7 +5,8 @@ import {
   Typestate,
   State,
   InterpreterOptions,
-  StateMachine
+  StateMachine,
+  SCXML
 } from 'xstate';
 import _ from 'lodash';
 import { transform, setOnPath } from '../utils';
@@ -25,24 +26,30 @@ export class WorkflowInterpreter extends Interpreter<
     super(machine, options);
     this.oldSend = this.send.bind(this);
     this.send = (
-      event: WorkflowEvent,
+      event: WorkflowEvent | SCXML.Event<WorkflowEvent>,
       payload?: EventData
     ): State<any, WorkflowEvent, StateSchema, Typestate<any>> => {
-      const { type } = event;
-      const data = _.get(event, 'data', {});
+      const isSCXML = _.get(event, '$$type') === 'scxml';
+      const data = isSCXML
+        ? _.get(event, 'data.data', {})
+        : _.get(event, 'data', {});
       const lastEventData = _.get(this.state.event, 'data', {});
       const { transitions } = this.machine.transition(this.state, event);
       const transition = _.head(transitions);
-      // console.log('transition', transition);
       const resultSelector = _.get(transition, 'resultSelector');
       const resultPath = _.get(transition, 'resultPath');
-      if (event.type !== 'external') {
-        const resultSelected = transform(resultSelector, data);
-        // console.log('resultSelected', resultSelected);
-        const result = setOnPath(lastEventData, resultPath, resultSelected);
-        // console.log('result', result);
-        return this.oldSend({ type, data: result }, payload);
-      }
+      const resultSelected = transform(resultSelector, data);
+      const result = setOnPath(lastEventData, resultPath, resultSelected);
+      // console.log('==================');
+      // console.log('state => ', this.state.value);
+      // console.log('resultSelector => ', resultSelector);
+      // console.log('data => ', data);
+      // console.log('resultSelected => ', resultSelected);
+      // console.log('lastEventData => ', lastEventData);
+      // console.log('resultPath => ', resultPath);
+      // console.log('result =>', result);
+      // console.log('==================');
+      _.set(event, isSCXML ? 'data.data' : 'data', result);
       return this.oldSend(event, payload);
     };
   }
