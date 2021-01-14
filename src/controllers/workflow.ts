@@ -34,7 +34,10 @@ export class Workflow extends EntityController<IWorkflow> {
     this.execution.update = this.execution.update.bind(this.execution);
   }
 
-  async start(data: Record<string, any> = {}): Promise<Execution> {
+  async start(
+    data: Record<string, any> = {},
+    name?: string
+  ): Promise<Execution> {
     const { config } = await this.data();
     const definition = await transformConfig(config, this.getTask);
     const workflowMachine = getMachine(
@@ -44,6 +47,7 @@ export class Workflow extends EntityController<IWorkflow> {
     );
     const { initialState } = workflowMachine;
     const execution = await this.execution.create({
+      name,
       config,
       definition,
       state: initialState.value,
