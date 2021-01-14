@@ -11,28 +11,28 @@ export const taskCreator = (
   { data },
   { src }
 ) => {
-  // console.log(ctx, data, src);
   const { config, taskEventSuffix, task } = src;
   const { parameters } = config;
-  const resolvedParameters = transform(parameters, data);
-  // console.log(resolvedParameters);
-  // console.log(task);
   const token = jwt.sign(
     { workflowInstanceId: ctx.wfid, taskEventSuffix },
     secret,
     signOptions
   );
-  // console.log(token);
-  const taskResolved = transform(task.config, resolvedParameters);
-  // console.log(taskResolved);
-  const tokenized = transform(
-    taskResolved,
+  const parametersWithInput = transform(parameters, data);
+  const parametersWithExecutionContext = transform(
+    parametersWithInput,
     {
+      executionId: ctx.wfid,
       task: { token }
     },
     '$$'
   );
-  // console.log(tokenized);
-  const res = await axios(tokenized);
+  const parametersWithEnv = transform(
+    parametersWithExecutionContext,
+    process.env,
+    '$$$'
+  );
+  const taskResolved = transform(task.config, parametersWithEnv);
+  const res = await axios(taskResolved);
   return res.data;
 };
