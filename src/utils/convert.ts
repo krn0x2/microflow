@@ -9,9 +9,12 @@ import {
   MicroflowDefinition,
   TaskNodeConfig,
   WorkflowEvent,
-  TransitionConfig
+  TransitionConfig,
+  TaskNodeSyncConfig,
+  TMicroflowNode
 } from '../types';
 import { MICROFLOW } from '../constants';
+import { nanoid } from 'nanoid';
 
 export async function transformConfig(
   config: MicroflowDefinition,
@@ -19,7 +22,13 @@ export async function transformConfig(
 ): Promise<MachineConfig<any, any, WorkflowEvent>> {
   const states = _.get(config, 'states', {});
   const uniqueTaskIds = _.chain(states)
-    .filter(['type', MICROFLOW.STATES.TASK])
+    .mapValues()
+    .filter((s) => {
+      const type = _.get(s, 'type');
+      return (
+        type === MICROFLOW.STATES.TASK || type === MICROFLOW.STATES.TASK_SYNC
+      );
+    })
     .map('taskId')
     .uniq()
     .value();
@@ -35,21 +44,32 @@ export function microflowToXstateConfig(
   taskDictionary: _.Dictionary<ITask>
 ): MachineConfig<any, any, WorkflowEvent> {
   const { states } = microflowConfig;
-  const newStates = _.chain(states)
-    .mapValues(
-      (s: TaskNodeConfig | AtomicNodeConfig | FinalNodeConfig, name) => {
-        if (s.type === 'task')
-          return microflowTaskToXstateNode(s, taskDictionary[s.taskId], name);
-        else if (s.type === 'atomic') return microflowAtomicToXstateNode(s);
-        else return microflowFinalToXstateNode(s);
-      }
-    )
-    .mapValues((s: XStateNodeConfig<any, any, WorkflowEvent>, name) => {
-      if (name === microflowConfig.initial) return transformInitialNode(s);
-      else return s;
-    })
-    .value() as Record<string, XStateNodeConfig<any, any, WorkflowEvent>>;
-  return { id: 'main', states: newStates, initial: microflowConfig.initial };
+  const newStates = _.mapValues(states, (s: TMicroflowNode, name) => {
+    if (s.type === 'task')
+      return microflowTaskToXstateNode(s, taskDictionary[s.taskId], name);
+    else if (s.type === 'taskSync')
+      return microflowTaskSyncToXstateNode(s, taskDictionary[s.taskId]);
+    else if (s.type === 'atomic') return microflowAtomicToXstateNode(s);
+    else return microflowFinalToXstateNode(s);
+  }) as Record<string, XStateNodeConfig<any, any, WorkflowEvent>>;
+
+  const initialNodeName = nanoid();
+  return {
+    id: 'main',
+    initial: initialNodeName,
+    meta: microflowConfig.meta,
+    states: {
+      [initialNodeName]: {
+        on: {
+          data: {
+            target: microflowConfig.initial,
+            resultPath: '$'
+          } as TransitionConfig
+        }
+      },
+      ...newStates
+    }
+  };
 }
 
 export function microflowTaskToXstateNode(
@@ -71,9 +91,7 @@ export function microflowTaskToXstateNode(
             taskId: s.taskId,
             task,
             config: {
-              parameters: s.parameters,
-              resultSelector: s.resultSelector,
-              resultPath: s.resultPath
+              parameters: s.parameters
             },
             taskEventSuffix
           },
@@ -81,8 +99,9 @@ export function microflowTaskToXstateNode(
             target: 'started'
           },
           onError: {
-            target: 'failed_to_start'
-          }
+            target: 'failed_to_start',
+            resultPath: `$.errors.${taskEventSuffix}`
+          } as TransitionConfig
         }
       },
       started: {
@@ -97,11 +116,30 @@ export function microflowTaskToXstateNode(
           }
         }
       },
-      success: {
-        type: 'final'
-      },
-      error: {},
       failed_to_start: {}
+    },
+    on: s.on
+  };
+}
+
+export function microflowTaskSyncToXstateNode(
+  s: TaskNodeSyncConfig,
+  task: ITask
+): XStateNodeConfig<any, any, WorkflowEvent> {
+  return {
+    type: 'atomic',
+    meta: s.meta,
+    invoke: {
+      src: {
+        type: 'task',
+        taskId: s.taskId,
+        task,
+        config: {
+          parameters: s.parameters
+        }
+      },
+      onDone: s.onDone,
+      onError: s.onError
     },
     on: s.on
   };
@@ -124,36 +162,4 @@ export function microflowFinalToXstateNode(
     type: 'final',
     meta: s.meta
   };
-}
-
-export function transformInitialNode(
-  stateNode: XStateNodeConfig<any, any, WorkflowEvent>
-): XStateNodeConfig<any, any, WorkflowEvent> {
-  return {
-    type: 'compound',
-    initial: 'waiting_for_data',
-    states: {
-      ...stateNode.states,
-      waiting_for_data: {
-        on: {
-          data: {
-            target: 'data_received'
-          }
-        }
-      },
-      data_received: {
-        always: stateNode.type === 'compound' ? stateNode.initial : undefined,
-        on:
-          stateNode.type === 'atomic'
-            ? _.mapValues(stateNode.on, (trans) => {
-                const transitionConfig = trans as TransitionConfig;
-                return {
-                  ...transitionConfig,
-                  target: `#main.${transitionConfig.target}`
-                };
-              })
-            : undefined
-      }
-    }
-  } as XStateNodeConfig<any, any, WorkflowEvent>;
 }

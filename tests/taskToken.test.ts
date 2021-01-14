@@ -16,10 +16,6 @@ const flow = new Microflow({
 });
 
 test('test transitions with tokens', async () => {
-  // console.log('============');
-  // console.log((await flow.task.read('airflow')).data);
-  // console.log((await flow.workflow.read('sample')).data);
-  // console.log('============');
   const task = await flow.task.create({
     id: 'airflow',
     type: 'http',
@@ -48,7 +44,8 @@ test('test transitions with tokens', async () => {
           type: 'atomic',
           on: {
             start_test: {
-              target: 'auto_test_1'
+              target: 'auto_test_1',
+              resultPath: '$'
             }
           }
         },
@@ -59,13 +56,6 @@ test('test transitions with tokens', async () => {
             dagId: 'dag1',
             data: '$'
           },
-          resultSelector: {
-            foo: 'bar',
-            baz: 'har',
-            message: '$.message',
-            dag_execution_date: '$.execution_date'
-          },
-          resultPath: '$.pipeline1.apiResponse',
           onDone: {
             target: 'ready_for_approval',
             resultSelector: {
@@ -105,13 +95,6 @@ test('test transitions with tokens', async () => {
             dagId: 'dag2',
             data: '$'
           },
-          resultSelector: {
-            foo: 'bar',
-            baz: 'har',
-            message: '$.message',
-            dag_execution_date: '$.execution_date'
-          },
-          resultPath: '$.pipeline2.apiResponse',
           onDone: {
             target: 'done',
             resultSelector: {
@@ -145,27 +128,52 @@ test('test transitions with tokens', async () => {
 
   await execution.send({
     type: 'start_test',
-    data: { a: 1, b: 2 }
+    data: { input1: 'val1', input2: 'val2' }
   });
 
   await flow.sendTaskSuccess(getTaskToken(executionId, 'auto_test_1'), {
-    ok: 'cupid'
+    test_a_result: true,
+    test_b_result: false
   });
 
   await execution.send({
     type: 'approve',
     data: {
-      notok: 'cupido'
+      message: 'The acceptance test was fine'
     }
   });
 
-  await flow.sendTaskSuccess(
-    getTaskToken(executionId, 'auto_test_2'),
-    {
-      c: 'wee'
-    }
-  );
-  
-  const { completed } = await execution.data();
+  await flow.sendTaskSuccess(getTaskToken(executionId, 'auto_test_2'), {
+    test_c_result: true
+  });
+
+  const { completed, output } = await execution.data();
   expect(completed).toBe(true);
+  expect(output).toMatchObject({
+    input1: 'val1',
+    input2: 'val2',
+    pipeline1: {
+      success: {
+        a: 'a',
+        b: 'b',
+        out: {
+          test_a_result: true,
+          test_b_result: false
+        }
+      }
+    },
+    approval: {
+      data: {
+        message: 'The acceptance test was fine'
+      }
+    },
+    pipeline2: {
+      success: {
+        e: 'e',
+        out: {
+          test_c_result: true
+        }
+      }
+    }
+  });
 });

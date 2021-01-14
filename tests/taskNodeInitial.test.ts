@@ -47,13 +47,6 @@ test('test transitions', async () => {
             dagId: 'dag1',
             data: '$'
           },
-          resultSelector: {
-            foo: 'bar',
-            baz: 'har',
-            message: '$.message',
-            dag_execution_date: '$.execution_date'
-          },
-          resultPath: '$.pipeline1.apiResponse',
           onDone: {
             target: 'ready_for_approval',
             resultSelector: {
@@ -93,13 +86,6 @@ test('test transitions', async () => {
             dagId: 'dag2',
             data: '$'
           },
-          resultSelector: {
-            foo: 'bar',
-            baz: 'har',
-            message: '$.message',
-            dag_execution_date: '$.execution_date'
-          },
-          resultPath: '$.pipeline2.apiResponse',
           onDone: {
             target: 'done',
             resultSelector: {
@@ -156,7 +142,33 @@ test('test transitions', async () => {
     }
   });
 
-  const { completed } = await execution.data();
-
+  const { completed, output } = await execution.data();
   expect(completed).toBe(true);
+  expect(output).toMatchObject({
+    input1: 'val1',
+    input2: 'val2',
+    pipeline1: {
+      success: {
+        a: 'a',
+        b: 'b',
+        out: {
+          test_a_result: true,
+          test_b_result: false
+        }
+      }
+    },
+    approval: {
+      data: {
+        message: 'The acceptance test was fine'
+      }
+    },
+    pipeline2: {
+      success: {
+        e: 'e',
+        out: {
+          test_c_result: true
+        }
+      }
+    }
+  });
 });

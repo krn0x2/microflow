@@ -1,7 +1,7 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { InvokeCreator } from 'xstate';
-import { transform, setOnPath } from './index';
+import { transform } from './index';
 
 export const taskCreator = (
   secret: jwt.Secret,
@@ -13,7 +13,7 @@ export const taskCreator = (
 ) => {
   // console.log(ctx, data, src);
   const { config, taskEventSuffix, task } = src;
-  const { parameters, resultSelector, resultPath } = config;
+  const { parameters } = config;
   const resolvedParameters = transform(parameters, data);
   // console.log(resolvedParameters);
   // console.log(task);
@@ -34,7 +34,5 @@ export const taskCreator = (
   );
   // console.log(tokenized);
   const res = await axios(tokenized);
-  const response = res.data;
-  const resultSelected = transform(resultSelector, response);
-  return setOnPath(data, resultPath, resultSelected);
+  return res.data;
 };

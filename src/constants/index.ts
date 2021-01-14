@@ -2,6 +2,7 @@ export const MICROFLOW = {
   CONCURRENCY: 20,
   STATES: {
     TASK: 'task',
+    TASK_SYNC: 'taskSync',
     ATOMIC: 'atomic',
     FINAL: 'final'
   },

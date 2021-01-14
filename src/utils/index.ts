@@ -22,6 +22,8 @@ const transform = <T extends ITransform = Record<string, any>>(
     return _.map(obj, (x) => transform(x, root, identifier)) as T;
   } else if (_.isObject(obj)) {
     return _.mapValues(obj, (x) => transform(x, root, identifier)) as T;
+  } else if (_.isUndefined(obj)) {
+    return root as T;
   } else {
     return obj;
   }
@@ -29,10 +31,11 @@ const transform = <T extends ITransform = Record<string, any>>(
 
 const setOnPath = (
   root: Record<string, any>,
-  path = '$',
+  path: string,
   obj: Record<string, any>
 ): Record<string, any> => {
   if (path === '$') return obj;
+  if (path === undefined) return root;
   const lodashPath = _.trimStart(path, '$.');
   return _.set(_.clone(root), lodashPath, obj);
 };
