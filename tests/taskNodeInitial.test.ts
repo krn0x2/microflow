@@ -11,11 +11,8 @@ const flow = new Microflow({
 
 test('test transitions', async () => {
   const task = await flow.task.create({
-    // Recognisiable identified for the task
     id: 'airflow',
-    // type of task (only 'http' supported right now)
     type: 'http',
-    //  <AxiosRequestConfig> supported (https://github.com/axios/axios/blob/master/index.d.ts#L44)
     config: {
       url: 'http://localhost:1000/api/experimental/dags/{{dagId}}/dag_runs',
       headers: {
@@ -23,9 +20,11 @@ test('test transitions', async () => {
         'Content-Type': 'application/json'
       },
       data: {
-        config: {
-          extraData: '$.data',
-          token: '$$.task.token'
+        conf: {
+          actualData: '$.data',
+          token: '$.token',
+          envKey: '$.envKey',
+          executionId: '$.executionId'
         }
       },
       method: 'post'
@@ -45,7 +44,10 @@ test('test transitions', async () => {
           taskId,
           parameters: {
             dagId: 'dag1',
-            data: '$'
+            data: '$',
+            token: '$$.task.token',
+            envKey: '$$$.myKey1',
+            executionId: '$$.executionId'
           },
           onDone: {
             target: 'ready_for_approval',
@@ -84,7 +86,10 @@ test('test transitions', async () => {
           taskId,
           parameters: {
             dagId: 'dag2',
-            data: '$'
+            data: '$',
+            token: '$$.task.token',
+            envKey: '$$$.myKey1',
+            executionId: '$$.executionId'
           },
           onDone: {
             target: 'done',

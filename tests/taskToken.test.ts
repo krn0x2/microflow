@@ -26,8 +26,12 @@ test('test transitions with tokens', async () => {
         'Content-Type': 'application/json'
       },
       data: {
-        actualData: '$.data',
-        token: '$$.task.token'
+        conf: {
+          actualData: '$.data',
+          token: '$.token',
+          envKey: '$.envKey',
+          executionId: '$.executionId'
+        }
       },
       method: 'post'
     }
@@ -54,7 +58,10 @@ test('test transitions with tokens', async () => {
           taskId: 'airflow',
           parameters: {
             dagId: 'dag1',
-            data: '$'
+            data: '$',
+            token: '$$.task.token',
+            envKey: '$$$.myKey1',
+            executionId: '$$.executionId'
           },
           onDone: {
             target: 'ready_for_approval',
@@ -93,7 +100,10 @@ test('test transitions with tokens', async () => {
           taskId: taskId,
           parameters: {
             dagId: 'dag2',
-            data: '$'
+            data: '$',
+            token: '$$.task.token',
+            envKey: '$$$.myKey1',
+            executionId: '$$.executionId'
           },
           onDone: {
             target: 'done',
