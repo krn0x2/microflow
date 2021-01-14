@@ -90,9 +90,12 @@ const task = await flow.task.create({
       'Content-Type': 'application/json'
     },
     data: {
-      config: {
-        extraData: '$.data',
-        token: '$$.task.token'
+      conf: {
+        // $ is a reference to 'parameters' object of a task in the workflow
+        actualData: '$.data',
+        token: '$.token',
+        envKey: '$.envKey',
+        executionId: '$.executionId'
       }
     },
     method: 'post'
@@ -111,16 +114,16 @@ const workflow = await flow.workflow.create({
         type: 'task',
         taskId,
         parameters: {
+          //example of constant
           dagId: 'dag1',
-          data: '$'
+          // $ = input event data to the task state
+          data: '$',
+          // $$ = Execution context object 
+          token: '$$.task.token',
+          // $$$ = process.env aka environment variables
+          envKey: '$$$.myKey1',
+          executionId: '$$.executionId'
         },
-        resultSelector: {
-          foo: 'bar',
-          baz: 'har',
-          message: '$.message',
-          dag_execution_date: '$.execution_date'
-        },
-        resultPath: '$.pipeline1.apiResponse',
         onDone: {
           target: 'ready_for_approval',
           resultSelector: {
@@ -158,15 +161,11 @@ const workflow = await flow.workflow.create({
         taskId,
         parameters: {
           dagId: 'dag2',
-          data: '$'
+          data: '$',
+          token: '$$.task.token',
+          envKey: '$$$.myKey1',
+          executionId: '$$.executionId'
         },
-        resultSelector: {
-          foo: 'bar',
-          baz: 'har',
-          message: '$.message',
-          dag_execution_date: '$.execution_date'
-        },
-        resultPath: '$.pipeline2.apiResponse',
         onDone: {
           target: 'done',
           resultSelector: {
@@ -228,32 +227,30 @@ const { completed, output, state } = await execution.data();
 console.log(output);
 /*
 {
-  input1: 'val1',
-  input2: 'val2',
-  pipeline1: {
-    apiResponse: {
-      foo: 'bar',
-      baz: 'har',
-      message:
-        'Created <DagRun dag1 @ 2021-01-06 15:23:02+00:00: manual__2021-01-06T15:23:02+00:00, externally triggered: True>',
-      dag_execution_date: '2021-01-06T15:23:02+00:00'
-    },
-    success: {
-      a: 'a',
-      b: 'b',
-      out: { test_a_result: true, test_b_result: false }
+  "input1": "val1",
+  "input2": "val2",
+  "pipeline1": {
+    "success": {
+      "a": "a",
+      "b": "b",
+      "out": {
+        "test_a_result": true,
+        "test_b_result": false
+      }
     }
   },
-  approval: { data: { message: 'The acceptance test was fine' } },
-  pipeline2: {
-    apiResponse: {
-      foo: 'bar',
-      baz: 'har',
-      message:
-        'Created <DagRun dag2 @ 2021-01-06 15:23:02+00:00: manual__2021-01-06T15:23:02+00:00, externally triggered: True>',
-      dag_execution_date: '2021-01-06T15:23:02+00:00'
-    },
-    success: { e: 'e', out: { test_c_result: true } }
+  "approval": {
+    "data": {
+      "message": "The acceptance test was fine"
+    }
+  },
+  "pipeline2": {
+    "success": {
+      "e": "e",
+      "out": {
+        "test_c_result": true
+      }
+    }
   }
 }
 */
