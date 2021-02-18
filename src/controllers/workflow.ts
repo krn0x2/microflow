@@ -55,7 +55,8 @@ export class Workflow extends EntityController<IWorkflow> {
     });
     const { id: executionId } = await execution.data();
     const { initialState: currentJson } = workflowMachine.withContext({
-      wfid: executionId
+      wfid: executionId,
+      name
     });
     await this.execution.update(executionId, {
       currentJson

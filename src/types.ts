@@ -96,10 +96,17 @@ export type StartWorkflowResponse = {
 
 export type SendEventResponse = SendEventSuccess;
 
-export type MicroflowStateTypes = 'task' | 'taskSync' | 'atomic' | 'final';
+export type MicroflowStateTypes =
+  | 'task'
+  | 'taskSync'
+  | 'taskMapSync'
+  | 'pass'
+  | 'atomic'
+  | 'final';
 
 export interface TransitionConfig {
   target: string;
+  meta?: Record<string, any>;
   resultSelector?: Record<string, any>;
   resultPath?: string;
 }
@@ -119,6 +126,12 @@ export interface FinalNodeConfig {
   meta?: Record<string, any>;
 }
 
+export interface PassNodeConfig extends StateNodeConfig {
+  type: 'pass';
+  onDone?: TransitionConfig;
+  onError?: TransitionConfig;
+}
+
 export interface TaskNodeConfig extends StateNodeConfig {
   type: 'task';
   taskId: string;
@@ -135,9 +148,20 @@ export interface TaskNodeSyncConfig extends StateNodeConfig {
   onError?: TransitionConfig;
 }
 
+export interface TaskMapNodeSyncConfig extends StateNodeConfig {
+  type: 'taskMapSync';
+  taskId: string;
+  itemsPath: string;
+  parameters?: Record<string, any>;
+  onDone?: TransitionConfig;
+  onError?: TransitionConfig;
+}
+
 export type TMicroflowNode =
   | TaskNodeConfig
   | TaskNodeSyncConfig
+  | TaskMapNodeSyncConfig
+  | PassNodeConfig
   | AtomicNodeConfig
   | FinalNodeConfig;
 

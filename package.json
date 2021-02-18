@@ -1,6 +1,6 @@
 {
   "name": "microflow",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-alpha.7",
   "description": "Finite state machine based HTTP microservice orchestration",
   "keywords": [
     "workflow",
@@ -38,7 +38,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest --runInBand"
+    "test": "jest"
   },
   "repository": {
     "type": "git",

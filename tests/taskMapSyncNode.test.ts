@@ -44,8 +44,9 @@ test('test transitions', async () => {
       initial: 'auto_test_1',
       states: {
         auto_test_1: {
-          type: 'taskSync',
+          type: 'taskMapSync',
           taskId,
+          itemsPath: '$.iterateOn',
           parameters: {
             dagId: 'dag1',
             data: '$._',
@@ -125,7 +126,8 @@ test('test transitions', async () => {
   // start an execution with initial data
   const execution = await workflow.start({
     input1: 'val1',
-    input2: 'val2'
+    input2: 'val2',
+    iterateOn: [1, 2, 3]
   });
 
   await execution.send({
@@ -141,11 +143,23 @@ test('test transitions', async () => {
     input1: 'val1',
     input2: 'val2',
     pipeline1: {
-      success: {
-        a: 'a',
-        b: 'b',
-        out: {}
-      }
+      success: [
+        {
+          a: 'a',
+          b: 'b',
+          out: {}
+        },
+        {
+          a: 'a',
+          b: 'b',
+          out: {}
+        },
+        {
+          a: 'a',
+          b: 'b',
+          out: {}
+        }
+      ]
     },
     approval: { data: { message: 'The acceptance test was fine' } },
     pipeline2: {

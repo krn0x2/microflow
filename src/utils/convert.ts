@@ -11,7 +11,9 @@ import {
   WorkflowEvent,
   TransitionConfig,
   TaskNodeSyncConfig,
-  TMicroflowNode
+  TMicroflowNode,
+  TaskMapNodeSyncConfig,
+  PassNodeConfig
 } from '../types';
 import { MICROFLOW } from '../constants';
 import { nanoid } from 'nanoid';
@@ -26,7 +28,9 @@ export async function transformConfig(
     .filter((s) => {
       const type = _.get(s, 'type');
       return (
-        type === MICROFLOW.STATES.TASK || type === MICROFLOW.STATES.TASK_SYNC
+        type === MICROFLOW.STATES.TASK ||
+        type === MICROFLOW.STATES.TASK_SYNC ||
+        type === MICROFLOW.STATES.TASK_MAP_SYNC
       );
     })
     .map('taskId')
@@ -49,7 +53,10 @@ export function microflowToXstateConfig(
       return microflowTaskToXstateNode(s, taskDictionary[s.taskId], name);
     else if (s.type === 'taskSync')
       return microflowTaskSyncToXstateNode(s, taskDictionary[s.taskId]);
+    else if (s.type === 'taskMapSync')
+      return microflowTaskMapSyncToXstateNode(s, taskDictionary[s.taskId]);
     else if (s.type === 'atomic') return microflowAtomicToXstateNode(s);
+    else if (s.type === 'pass') return microflowPassToXstateNode(s);
     else return microflowFinalToXstateNode(s);
   }) as Record<string, XStateNodeConfig<any, any, WorkflowEvent>>;
 
@@ -90,9 +97,7 @@ export function microflowTaskToXstateNode(
             type: s.type,
             taskId: s.taskId,
             task,
-            config: {
-              parameters: s.parameters
-            },
+            parameters: s.parameters,
             taskEventSuffix
           },
           onDone: {
@@ -134,9 +139,30 @@ export function microflowTaskSyncToXstateNode(
         type: 'task',
         taskId: s.taskId,
         task,
-        config: {
-          parameters: s.parameters
-        }
+        parameters: s.parameters
+      },
+      onDone: s.onDone,
+      onError: s.onError
+    },
+    on: s.on
+  };
+}
+
+export function microflowTaskMapSyncToXstateNode(
+  s: TaskMapNodeSyncConfig,
+  task: ITask
+): XStateNodeConfig<any, any, WorkflowEvent> {
+  return {
+    type: 'atomic',
+    meta: s.meta,
+    invoke: {
+      src: {
+        type: 'task',
+        taskId: s.taskId,
+        task,
+        isMap: true,
+        itemsPath: s.itemsPath ? s.itemsPath : '$',
+        parameters: s.parameters
       },
       onDone: s.onDone,
       onError: s.onError
@@ -152,6 +178,22 @@ export function microflowAtomicToXstateNode(
     type: 'atomic',
     meta: s.meta,
     on: s.on
+  };
+}
+
+export function microflowPassToXstateNode(
+  s: PassNodeConfig
+): XStateNodeConfig<any, any, WorkflowEvent> {
+  return {
+    type: 'atomic',
+    meta: s.meta,
+    invoke: {
+      src: {
+        type: 'transform'
+      },
+      onDone: s.onDone,
+      onError: s.onError
+    }
   };
 }
 

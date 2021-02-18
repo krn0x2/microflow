@@ -1,3 +1,7 @@
+import axios from 'axios';
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+mockedAxios.request.mockResolvedValue({});
 import { Microflow } from '../src/microflow';
 
 const flow = new Microflow({
@@ -52,17 +56,17 @@ test('test transitions', async () => {
           taskId,
           parameters: {
             dagId: 'dag1',
-            data: '$',
-            token: '$$.task.token',
-            envKey: '$$$.myKey1',
-            executionId: '$$.executionId'
+            data: '$._',
+            token: '$._task.token',
+            envKey: '$._env.myKey1',
+            executionId: '$._task.executionId'
           },
           onDone: {
             target: 'ready_for_approval',
             resultSelector: {
               a: 'a',
               b: 'b',
-              out: '$'
+              out: '$._'
             },
             resultPath: '$.pipeline1.success'
           },
@@ -71,7 +75,7 @@ test('test transitions', async () => {
             resultSelector: {
               c: 'c',
               d: 'd',
-              out: '$'
+              out: '$._'
             },
             resultPath: '$.pipeline1.error'
           }
@@ -95,15 +99,15 @@ test('test transitions', async () => {
           parameters: {
             dagId: 'dag2',
             data: 'karan',
-            token: '$$.task.token',
-            envKey: '$$$.myKey2',
-            executionId: '$$.executionId'
+            token: '$._task.token',
+            envKey: '$._env.myKey2',
+            executionId: '$._task.executionId'
           },
           onDone: {
             target: 'done',
             resultSelector: {
               e: 'e',
-              out: '$'
+              out: '$._'
             },
             resultPath: '$.pipeline2.success'
           },
@@ -111,7 +115,7 @@ test('test transitions', async () => {
             target: 'failed',
             resultSelector: {
               f: 'f',
-              out: '$'
+              out: '$._'
             },
             resultPath: '$.pipeline2.error'
           }
