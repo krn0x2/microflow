@@ -3,6 +3,10 @@ import * as _ from 'lodash';
 import * as handlebars from 'handlebars';
 import { ITransform } from '../types';
 
+handlebars.registerHelper('json', function(context) {
+  return JSON.stringify(context);
+});
+
 const transform = <T extends ITransform = Record<string, any>>(
   obj: T,
   root: Record<string, any> = {},
