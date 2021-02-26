@@ -7,7 +7,7 @@ import {
   Typestate
 } from 'xstate';
 import { WorkflowEvent } from '../types';
-import { taskCreator } from './task';
+import { taskCreator, transformerInvoke } from './task';
 
 export function getMachine(
   config: MachineConfig<any, any, WorkflowEvent>,
@@ -16,7 +16,8 @@ export function getMachine(
 ): StateMachine<any, any, AnyEventObject, Typestate<any>> {
   return Machine(config, {
     services: {
-      task: taskCreator(secret, signOptions)
+      task: taskCreator(secret, signOptions),
+      transform: transformerInvoke
     }
   });
 }

@@ -106,54 +106,6 @@ describe('transform function', () => {
     });
   });
 
-  test('object input, object root, non-default identifier', () => {
-    const output = transform(
-      {
-        a: '$',
-        b: '$.key1',
-        c: '$.jabber',
-        a1: '$$',
-        b2: '$$.key1',
-        c2: '$$.jabber',
-        d: 'constant',
-        e: {
-          f: 'constant',
-          g: '$.key1',
-          h: '$',
-          g1: '$$.key1',
-          h1: '$$'
-        }
-      },
-      {
-        key1: 'val1',
-        key2: 'val2'
-      },
-      '$$'
-    );
-    expect(output).toEqual({
-      a: '$',
-      b: '$.key1',
-      c: '$.jabber',
-      a1: {
-        key1: 'val1',
-        key2: 'val2'
-      },
-      b2: 'val1',
-      c2: undefined,
-      d: 'constant',
-      e: {
-        f: 'constant',
-        g: '$.key1',
-        h: '$',
-        g1: 'val1',
-        h1: {
-          key1: 'val1',
-          key2: 'val2'
-        }
-      }
-    });
-  });
-
   test('object(with array key) input and root', () => {
     const output = transform(
       {

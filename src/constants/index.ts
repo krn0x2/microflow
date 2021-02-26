@@ -3,6 +3,7 @@ export const MICROFLOW = {
   STATES: {
     TASK: 'task',
     TASK_SYNC: 'taskSync',
+    TASK_MAP_SYNC: 'taskMapSync',
     ATOMIC: 'atomic',
     FINAL: 'final'
   },

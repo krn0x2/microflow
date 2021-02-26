@@ -3,27 +3,27 @@ import * as _ from 'lodash';
 import * as handlebars from 'handlebars';
 import { ITransform } from '../types';
 
+handlebars.registerHelper('json', function(context) {
+  return JSON.stringify(context);
+});
+
 const transform = <T extends ITransform = Record<string, any>>(
   obj: T,
-  root: Record<string, any>,
-  identifier = '$'
+  root: Record<string, any> = {},
+  def: Record<string, any> = root._,
+  original = true
 ): T => {
   if (_.isString(obj)) {
-    if (_.startsWith(obj, `${identifier}.`) || obj === identifier)
-      return _.head(
-        JSONPath({
-          path:
-            obj === identifier ? '$' : _.replace(obj, `${identifier}.`, '$.'),
-          json: root
-        })
-      );
+    if (_.startsWith(obj, '$.') || obj === '$')
+      return JSONPath({ path: obj, json: root, wrap: false });
     return handlebars.compile(obj)(root) as T;
   } else if (_.isArray(obj)) {
-    return _.map(obj, (x) => transform(x, root, identifier)) as T;
+    return _.map(obj, (x) => transform(x, root, def, false)) as T;
   } else if (_.isObject(obj)) {
-    return _.mapValues(obj, (x) => transform(x, root, identifier)) as T;
+    return _.mapValues(obj, (x) => transform(x, root, def, false)) as T;
   } else if (_.isUndefined(obj)) {
-    return root as T;
+    if (original) return def as T;
+    else return undefined;
   } else {
     return obj;
   }

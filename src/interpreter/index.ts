@@ -34,21 +34,37 @@ export class WorkflowInterpreter extends Interpreter<
         ? _.get(event, 'data.data', {})
         : _.get(event, 'data', {});
       const lastEventData = _.get(this.state.event, 'data', {});
+      const isMapNode = _.get(
+        this.state,
+        'activities.task.activity.src.isMap',
+        false
+      );
+      const { context: ctx } = this.state;
       const { transitions } = this.machine.transition(this.state, event);
       const transition = _.head(transitions);
       const resultSelector = _.get(transition, 'resultSelector');
       const resultPath = _.get(transition, 'resultPath');
-      const resultSelected = transform(resultSelector, data);
+      const resultSelected = isMapNode
+        ? data.map((value, index) =>
+            transform(
+              resultSelector,
+              {
+                _: data,
+                _task: {
+                  executionId: ctx.wfid,
+                  name: ctx.name,
+                  item: { value, index }
+                },
+                _env: process.env
+              },
+              value
+            )
+          )
+        : transform(resultSelector, {
+            _: data,
+            _env: process.env
+          });
       const result = setOnPath(lastEventData, resultPath, resultSelected);
-      // console.log('==================');
-      // console.log('state => ', this.state.value);
-      // console.log('resultSelector => ', resultSelector);
-      // console.log('data => ', data);
-      // console.log('resultSelected => ', resultSelected);
-      // console.log('lastEventData => ', lastEventData);
-      // console.log('resultPath => ', resultPath);
-      // console.log('result =>', result);
-      // console.log('==================');
       _.set(event, isSCXML ? 'data.data' : 'data', result);
       return this.oldSend(event, payload);
     };
