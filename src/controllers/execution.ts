@@ -27,7 +27,7 @@ export class Execution extends EntityController<IExecution> {
     return new BluebirdPromise<Execution>((res) => {
       service
         .onTransition(async (state) => {
-          if (state.changed && _.isEmpty(state.children)) {
+          if (state.changed !== undefined && _.isEmpty(state.children)) {
             await this.update({
               currentJson: state,
               state: state.value,
