@@ -2,39 +2,32 @@ import { ICrudable, IModel } from './crudable';
 import { IJwt, IMicroflowStorage } from './types';
 
 interface EntityConstructor<T extends IModel, U> {
-  new (model: T, store: ICrudable<T>, storage: IMicroflowStorage, jwt: IJwt): U;
+  new (model: T, store: ICrudable<T>, storage: IMicroflowStorage, jwt: IJwt, timeout: number): U;
 }
 
 export class MicroflowCore<T extends IModel, U> {
-  private ctor: EntityConstructor<T, U>;
-  private store: ICrudable<T>;
-  private storage: IMicroflowStorage;
-  private jwt: IJwt;
   constructor(
-    ctor: EntityConstructor<T, U>,
-    store: ICrudable<T>,
-    storage?: IMicroflowStorage,
-    jwt?: IJwt
+    private ctor: EntityConstructor<T, U>,
+    private store: ICrudable<T>,
+    private storage?: IMicroflowStorage,
+    private jwt?: IJwt,
+    private timeout?: number,
   ) {
-    this.ctor = ctor;
-    this.store = store;
-    this.storage = storage;
-    this.jwt = jwt;
   }
 
   async create(data: Omit<T, 'id'> & { id?: T['id'] }): Promise<U> {
     const model = await this.store.create(data);
-    return new this.ctor(model, this.store, this.storage, this.jwt);
+    return new this.ctor(model, this.store, this.storage, this.jwt, this.timeout);
   }
 
   async read(id: T['id']): Promise<U> {
     const model = await this.store.read(id);
-    return new this.ctor(model, this.store, this.storage, this.jwt);
+    return new this.ctor(model, this.store, this.storage, this.jwt, this.timeout);
   }
 
   async update(id: T['id'], data: Partial<Omit<T, 'id'>>): Promise<U> {
     const model = await this.store.update(id, data);
-    return new this.ctor(model, this.store, this.storage, this.jwt);
+    return new this.ctor(model, this.store, this.storage, this.jwt, this.timeout);
   }
 
   async delete(id: T['id']): Promise<T['id']> {

@@ -20,7 +20,8 @@ export class Workflow extends EntityController<IWorkflow> {
     model: IWorkflow,
     store: ICrudable<IWorkflow>,
     storage: IMicroflowStorage,
-    jwt: IJwt
+    jwt: IJwt,
+    timeout: number,
   ) {
     super(model, store, storage, jwt);
     this.getTask = storage.task.read.bind(storage.task);
@@ -28,7 +29,8 @@ export class Workflow extends EntityController<IWorkflow> {
       Execution,
       storage.execution,
       storage,
-      this.jwt
+      this.jwt,
+      timeout,
     );
     this.execution.create = this.execution.create.bind(this.execution);
     this.execution.update = this.execution.update.bind(this.execution);

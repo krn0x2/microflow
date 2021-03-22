@@ -39,7 +39,7 @@ export class Execution extends EntityController<IExecution> {
         })
         .send(event);
     })
-      .timeout(10000)
+      .timeout(this.timeout)
       .catch(() => {
         return this;
       })
