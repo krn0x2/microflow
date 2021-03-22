@@ -25,7 +25,7 @@ export class Microflow {
   public execution: MicroflowCore<IExecution, Execution>;
 
   constructor(config: IMicroflowConfig) {
-    const { storage, jwt } = config;
+    const { storage, jwt, timeout } = config;
     const { secretOrPublicKey, sign, verify } = jwt;
     this.secret = secretOrPublicKey;
     this.signOptions = sign;
@@ -39,14 +39,16 @@ export class Microflow {
       Workflow,
       this.storage.workflow,
       this.storage,
-      { secretOrPublicKey: this.secret, sign: this.signOptions }
+      { secretOrPublicKey: this.secret, sign: this.signOptions },
+      timeout
     );
     this.task = new MicroflowCore(Task, this.storage.task);
     this.execution = new MicroflowCore(
       Execution,
       this.storage.execution,
       this.storage,
-      { secretOrPublicKey: this.secret, sign: this.signOptions }
+      { secretOrPublicKey: this.secret, sign: this.signOptions },
+      timeout,
     );
   }
 

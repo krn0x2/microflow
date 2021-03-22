@@ -27,6 +27,7 @@ export type ITransform =
 
 export interface IMicroflowConfig {
   storage?: IMicroflowStorage;
+  timeout?: number;
   jwt: IJwt;
 }
 
